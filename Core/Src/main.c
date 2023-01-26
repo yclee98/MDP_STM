@@ -545,6 +545,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(CIN2_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : SERVO_Pin */
+  GPIO_InitStruct.Pin = SERVO_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(SERVO_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : CIN1_Pin */
   GPIO_InitStruct.Pin = CIN1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
