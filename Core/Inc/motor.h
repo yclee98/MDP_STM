@@ -11,5 +11,11 @@
 
 void Motor_Init();
 void ServoCenter();
+void setSpeed(uint16_t speed);
+void setDirection(bool isForward);
+void forward();
+void backward();
+void turnLeft();
+void turnRight();
 
 #endif /* INC_MOTOR_H_ */
