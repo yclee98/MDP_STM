@@ -72,9 +72,9 @@ const osThreadAttr_t encoderTask_attributes = {
   .priority = (osPriority_t) osPriorityLow,
 };
 /* USER CODE BEGIN PV */
-uint16_t pwmVal = 2000; // Speed of the Robot
+uint16_t pwmVal = 1200; // Speed of the Robot
 uint16_t maxPwmVal = 7000; // Max Speed of the Robot
-uint16_t minPwmVal = 1000; // Min Speed of the Robot
+uint16_t minPwmVal = 1200; // Min Speed of the Robot
 uint16_t pwmValC = 0;	// Speed of wheel C
 uint16_t pwmValD = 0;	// Speed of wheel D
 
@@ -135,7 +135,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   OLED_Init();
   SerialComm_Init();
-  Motor_Init();
+  //Motor_Init();
 
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
   encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
@@ -246,7 +246,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 1440;
+  htim1.Init.Prescaler = 160;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 1000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -274,11 +274,10 @@ static void MX_TIM1_Init(void)
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
   }
@@ -581,15 +580,36 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	OLED_ShowString(10,10,(uint8_t*)"Ready ");
-	OLED_Refresh_Gram();
 
   /* Infinite loop */
   for(;;)
   {
 	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+
+	  forward(145);
+	  OLED_ShowString(10,10,(uint8_t*)"Ready 145");
+	  	OLED_Refresh_Gram();
 	  osDelay(5000);
-	  ServoCenter();
+	  forward(146);
+	  OLED_ShowString(10,10,(uint8_t*)"Ready 146");
+	  	OLED_Refresh_Gram();
+	  	  osDelay(5000);
+	  	forward(147);
+	  	OLED_ShowString(10,10,(uint8_t*)"Ready 147");
+	  		OLED_Refresh_Gram();
+	  		  osDelay(5000);
+	  		forward(148);
+	  		OLED_ShowString(10,10,(uint8_t*)"Ready 148");
+	  			OLED_Refresh_Gram();
+	  			  osDelay(5000);
+	  			forward(149);
+	  			OLED_ShowString(10,10,(uint8_t*)"Ready 149");
+	  				OLED_Refresh_Gram();
+	  				  osDelay(5000);
+	  				forward(150);
+	  				OLED_ShowString(10,10,(uint8_t*)"Ready 150");
+	  					OLED_Refresh_Gram();
+	  					  osDelay(5000);
   }
   /* USER CODE END 5 */
 }
@@ -606,17 +626,27 @@ void syncMotor(void *argument)
   /* USER CODE BEGIN syncMotor */
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
-	setDirection(1);
-	forward();
+	OLED_ShowString(10,20,(uint8_t*)"Ready motor");
+	OLED_Refresh_Gram();
 
 	/* Infinite loop */
 	for(;;)
 	{
+//		htim1.Instance->CCR4 = 250;
 		pwmValC = pwmVal;
 		pwmValD = pwmVal;
+//
+//		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
+//		continue;
 		while(abs(speedDiff) >= 50)// Wheel not in sync
 		{
+			if (pwmValC - pwmVal > 100)
+			{
+				break;
+			}
 			if(speedDiff > 0) // C Wheel faster than D Wheel
 			{
 				pwmValD += 10;
@@ -626,7 +656,8 @@ void syncMotor(void *argument)
 				pwmValD -= 10;
 				if(pwmValD <= minPwmVal)
 				{
-					pwmValD += minPwmVal;
+					pwmValD = minPwmVal;
+					pwmValC = minPwmVal;
 				}
 			}
 			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
@@ -650,6 +681,10 @@ void syncMotor(void *argument)
 void encoder(void *argument)
 {
   /* USER CODE BEGIN encoder */
+
+	//OLED_ShowString(10,30,(uint8_t*)"Ready motor");
+	//OLED_Refresh_Gram();
+
 	/* Infinite loop */
 	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
@@ -664,6 +699,8 @@ void encoder(void *argument)
 
 	for(;;)
 	{
+		if(pwmVal < 1000)
+			continue;
 		if(HAL_GetTick()-tick > 1000L)
 		{
 			cnt2 = __HAL_TIM_GET_COUNTER(&htim4);

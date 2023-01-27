@@ -11,7 +11,7 @@ extern uint16_t pwmValD;	// Speed of wheel D
 extern int speedDiff;
 
 void Motor_Init(){
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 }
 
 void ServoCenter(){
@@ -24,6 +24,9 @@ void setSpeed(uint16_t speed)
 	{
 		return;
 	}
+
+	if (speed == 0)
+		pwmVal = 0;
 
 	if (speed < minPwmVal)
 	{
@@ -49,12 +52,14 @@ void setDirection(bool isForward)
 	}
 }
 
-void forward()
+void forward(int var)
 {
 
-	htim1.Instance->CCR1 = 75;
+	htim1.Instance->CCR4 = var;//145;
 	setDirection(1);
-	setSpeed(2000);
+	osDelay(200);
+
+	setSpeed(1300);
 
 	osDelay(5000);
 
@@ -63,7 +68,7 @@ void forward()
 
 void backward()
 {
-	htim1.Instance->CCR1 = 75;
+	htim1.Instance->CCR4 = 150;
 
 	setDirection(0);
 	setSpeed(2000);
@@ -72,9 +77,28 @@ void backward()
 	setSpeed(0);
 }
 
+void test()
+{
+	HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- forward
+	HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- forward
+	HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_RESET);
+}
+
+void testrun()
+{
+	test();
+
+	setSpeed(2000);
+
+		osDelay(5000);
+
+		setSpeed(0);
+}
+
 void turnLeft()
 {
-	htim1.Instance->CCR1 = 110;
+	htim1.Instance->CCR4 = 85;
 	setDirection(1);
 	setSpeed(2000);
 
@@ -85,7 +109,7 @@ void turnLeft()
 
 void turnRight()
 {
-	htim1.Instance->CCR1 = 50;
+	htim1.Instance->CCR4 = 250;
 	setDirection(1);
 	setSpeed(2000);
 
