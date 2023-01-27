@@ -72,7 +72,13 @@ const osThreadAttr_t encoderTask_attributes = {
   .priority = (osPriority_t) osPriorityLow,
 };
 /* USER CODE BEGIN PV */
+uint16_t pwmVal = 2000; // Speed of the Robot
+uint16_t maxPwmVal = 7000; // Max Speed of the Robot
+uint16_t minPwmVal = 1000; // Min Speed of the Robot
+uint16_t pwmValC = 0;	// Speed of wheel C
+uint16_t pwmValD = 0;	// Speed of wheel D
 
+int speedDiff = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,9 +108,6 @@ void encoder(void *argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-	EncoderTaskHandle = osThreadNew(encoder, NULL, &EncoderTask_attributes);
-	SyncMotorTaskHandle = osThreadNew(syncMotor, NULL, &SyncMotorTask_attributes);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -135,6 +138,8 @@ int main(void)
   Motor_Init();
 
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
+  syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -269,10 +274,11 @@ static void MX_TIM1_Init(void)
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -544,12 +550,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(CIN2_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : SERVO_Pin */
-  GPIO_InitStruct.Pin = SERVO_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(SERVO_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : CIN1_Pin */
   GPIO_InitStruct.Pin = CIN1_Pin;

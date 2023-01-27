@@ -2,12 +2,20 @@
 
 extern TIM_HandleTypeDef htim1;
 
+extern uint16_t pwmVal; // Speed of the Robot
+extern uint16_t maxPwmVal; // Max Speed of the Robot
+extern uint16_t minPwmVal; // Min Speed of the Robot
+extern uint16_t pwmValC;	// Speed of wheel C
+extern uint16_t pwmValD;	// Speed of wheel D
+
+extern int speedDiff;
+
 void Motor_Init(){
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 }
 
 void ServoCenter(){
-	htim1.Instance->CCR4 =150;
+	htim1.Instance->CCR1 =150;
 }
 
 void setSpeed(uint16_t speed)
@@ -44,7 +52,7 @@ void setDirection(bool isForward)
 void forward()
 {
 
-	htim1.Instance->CCR4 = 75;
+	htim1.Instance->CCR1 = 75;
 	setDirection(1);
 	setSpeed(2000);
 
@@ -55,7 +63,7 @@ void forward()
 
 void backward()
 {
-	htim1.Instance->CCR4 = 75;
+	htim1.Instance->CCR1 = 75;
 
 	setDirection(0);
 	setSpeed(2000);
@@ -66,7 +74,7 @@ void backward()
 
 void turnLeft()
 {
-	htim1.Instance->CCR4 = 110;
+	htim1.Instance->CCR1 = 110;
 	setDirection(1);
 	setSpeed(2000);
 
@@ -77,7 +85,7 @@ void turnLeft()
 
 void turnRight()
 {
-	htim1.Instance->CCR4 = 50;
+	htim1.Instance->CCR1 = 50;
 	setDirection(1);
 	setSpeed(2000);
 
