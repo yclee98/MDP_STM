@@ -11,12 +11,12 @@ extern uint16_t pwmValD;	// Speed of wheel D
 extern int speedDiff;
 
 void Motor_Init(){
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 }
 
-void ServoCenter(){
-	htim1.Instance->CCR1 =150;
-}
+//void ServoCenter(){
+//	htim1.Instance->CCR1 =150;
+//}
 
 void setSpeed(uint16_t speed)
 {

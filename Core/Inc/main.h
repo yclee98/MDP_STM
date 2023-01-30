@@ -59,8 +59,16 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define OLED_S_Pin GPIO_PIN_5
+#define OLED_S_GPIO_Port GPIOE
+#define OLED_SD_Pin GPIO_PIN_6
+#define OLED_SD_GPIO_Port GPIOE
 #define CIN2_Pin GPIO_PIN_5
 #define CIN2_GPIO_Port GPIOC
+#define OLED_RST_Pin GPIO_PIN_7
+#define OLED_RST_GPIO_Port GPIOE
+#define OLED_DC_Pin GPIO_PIN_8
+#define OLED_DC_GPIO_Port GPIOE
 #define LED3_Pin GPIO_PIN_10
 #define LED3_GPIO_Port GPIOE
 #define CIN1_Pin GPIO_PIN_12
@@ -69,6 +77,9 @@ void Error_Handler(void);
 #define DIN1_GPIO_Port GPIOB
 #define DIN2_Pin GPIO_PIN_15
 #define DIN2_GPIO_Port GPIOB
+#define User_Button_Pin GPIO_PIN_8
+#define User_Button_GPIO_Port GPIOD
+#define User_Button_EXTI_IRQn EXTI9_5_IRQn
 #define PWMC_Pin GPIO_PIN_8
 #define PWMC_GPIO_Port GPIOC
 #define PWMD_Pin GPIO_PIN_9

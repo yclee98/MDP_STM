@@ -25,7 +25,6 @@
 #include "oled.h"
 #include "serialcomm.h"
 #include "motor.h"
-//#include "seiralcomm.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,7 +70,21 @@ const osThreadAttr_t encoderTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for oledTask */
+osThreadId_t oledTaskHandle;
+const osThreadAttr_t oledTask_attributes = {
+  .name = "oledTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* USER CODE BEGIN PV */
+//
+//set to 1 once user button is pressed so that code will run
+int start = 0;
+
+//OLED row display
+uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OLED_row5[20];
+
 uint16_t pwmVal = 1200; // Speed of the Robot
 uint16_t maxPwmVal = 7000; // Max Speed of the Robot
 uint16_t minPwmVal = 1200; // Min Speed of the Robot
@@ -79,6 +92,8 @@ uint16_t pwmValC = 0;	// Speed of wheel C
 uint16_t pwmValD = 0;	// Speed of wheel D
 
 int speedDiff = 0;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,6 +107,7 @@ static void MX_TIM8_Init(void);
 void StartDefaultTask(void *argument);
 void syncMotor(void *argument);
 void encoder(void *argument);
+void oledDisplayTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -137,9 +153,10 @@ int main(void)
   SerialComm_Init();
   //Motor_Init();
 
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
-  syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
+  //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+//  syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
+//  encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
+//  oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -523,9 +540,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8
+  HAL_GPIO_WritePin(GPIOE, OLED_S_Pin|OLED_SD_Pin|OLED_RST_Pin|OLED_DC_Pin
                           |LED3_Pin|CIN1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -534,9 +552,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, DIN1_Pin|DIN2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PE5 PE6 PE7 PE8
+  /*Configure GPIO pins : OLED_S_Pin OLED_SD_Pin OLED_RST_Pin OLED_DC_Pin
                            LED3_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8
+  GPIO_InitStruct.Pin = OLED_S_Pin|OLED_SD_Pin|OLED_RST_Pin|OLED_DC_Pin
                           |LED3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -564,9 +582,27 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : User_Button_Pin */
+  GPIO_InitStruct.Pin = User_Button_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(User_Button_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
+	if(GPIO_Pin == User_Button_Pin && start == 0){
+		start = 1;
+		defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+	}
+}
+
 
 /* USER CODE END 4 */
 
@@ -580,36 +616,20 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
+	syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
+	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
+	oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
 
-  /* Infinite loop */
+/* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+	  if(start == 0)
+		  continue;
 
+	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
 	  forward(145);
-	  OLED_ShowString(10,10,(uint8_t*)"Ready 145");
-	  	OLED_Refresh_Gram();
 	  osDelay(5000);
-	  forward(146);
-	  OLED_ShowString(10,10,(uint8_t*)"Ready 146");
-	  	OLED_Refresh_Gram();
-	  	  osDelay(5000);
-	  	forward(147);
-	  	OLED_ShowString(10,10,(uint8_t*)"Ready 147");
-	  		OLED_Refresh_Gram();
-	  		  osDelay(5000);
-	  		forward(148);
-	  		OLED_ShowString(10,10,(uint8_t*)"Ready 148");
-	  			OLED_Refresh_Gram();
-	  			  osDelay(5000);
-	  			forward(149);
-	  			OLED_ShowString(10,10,(uint8_t*)"Ready 149");
-	  				OLED_Refresh_Gram();
-	  				  osDelay(5000);
-	  				forward(150);
-	  				OLED_ShowString(10,10,(uint8_t*)"Ready 150");
-	  					OLED_Refresh_Gram();
-	  					  osDelay(5000);
+
   }
   /* USER CODE END 5 */
 }
@@ -628,8 +648,7 @@ void syncMotor(void *argument)
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
-	OLED_ShowString(10,20,(uint8_t*)"Ready motor");
-	OLED_Refresh_Gram();
+	sprintf(OLED_row0, "Ready motor");
 
 	/* Infinite loop */
 	for(;;)
@@ -641,29 +660,29 @@ void syncMotor(void *argument)
 //		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
 //				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
 //		continue;
-		while(abs(speedDiff) >= 50)// Wheel not in sync
-		{
-			if (pwmValC - pwmVal > 100)
-			{
-				break;
-			}
-			if(speedDiff > 0) // C Wheel faster than D Wheel
-			{
-				pwmValD += 10;
-			}
-			else
-			{
-				pwmValD -= 10;
-				if(pwmValD <= minPwmVal)
-				{
-					pwmValD = minPwmVal;
-					pwmValC = minPwmVal;
-				}
-			}
-			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
-			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
-			osDelay(100);
-		}
+//		while(abs(speedDiff) >= 50)// Wheel not in sync
+//		{
+//			if (pwmValC - pwmVal > 100)
+//			{
+//				break;
+//			}
+//			if(speedDiff > 0) // C Wheel faster than D Wheel
+//			{
+//				pwmValD += 10;
+//			}
+//			else
+//			{
+//				pwmValD -= 10;
+//				if(pwmValD <= minPwmVal)
+//				{
+//					pwmValD = minPwmVal;
+//					pwmValC = minPwmVal;
+//				}
+//			}
+//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
+//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
+//			osDelay(100);
+//		}
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
 		osDelay(100);
@@ -681,9 +700,6 @@ void syncMotor(void *argument)
 void encoder(void *argument)
 {
   /* USER CODE BEGIN encoder */
-
-	//OLED_ShowString(10,30,(uint8_t*)"Ready motor");
-	//OLED_Refresh_Gram();
 
 	/* Infinite loop */
 	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
@@ -741,10 +757,37 @@ void encoder(void *argument)
 			tick = HAL_GetTick();
 
 			speedDiff = cWheelSpeed - dWheelSpeed;
+
+			sprintf(OLED_row2, "C speed: %5d", cWheelSpeed);
+			sprintf(OLED_row3, "D speed: %5d", dWheelSpeed);
 		}
 		osDelay(10);
 	}
   /* USER CODE END encoder */
+}
+
+/* USER CODE BEGIN Header_oledDisplayTask */
+/**
+* @brief Function implementing the oledTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_oledDisplayTask */
+void oledDisplayTask(void *argument)
+{
+  /* USER CODE BEGIN oledDisplayTask */
+  /* Infinite loop */
+  for(;;)
+  {
+		OLED_ShowString(10,0,OLED_row0);
+		OLED_ShowString(10,10,OLED_row1);
+		OLED_ShowString(10,20,OLED_row2);
+		OLED_ShowString(10,30,OLED_row3);
+		OLED_ShowString(10,40,OLED_row4);
+		OLED_ShowString(10,50,OLED_row5);
+		OLED_Refresh_Gram();
+  }
+  /* USER CODE END oledDisplayTask */
 }
 
 /**
