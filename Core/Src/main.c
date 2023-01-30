@@ -25,6 +25,7 @@
 #include "oled.h"
 #include "serialcomm.h"
 #include "motor.h"
+#include "gyro.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,6 +43,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
@@ -85,6 +88,9 @@ int start = 0;
 //OLED row display
 uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OLED_row5[20];
 
+//Usart buffer
+uint8_t aRxBuffer[4];
+
 uint16_t pwmVal = 1200; // Speed of the Robot
 uint16_t maxPwmVal = 7000; // Max Speed of the Robot
 uint16_t minPwmVal = 1200; // Min Speed of the Robot
@@ -104,6 +110,7 @@ static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM8_Init(void);
+static void MX_I2C1_Init(void);
 void StartDefaultTask(void *argument);
 void syncMotor(void *argument);
 void encoder(void *argument);
@@ -148,6 +155,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM4_Init();
   MX_TIM8_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   OLED_Init();
   SerialComm_Init();
@@ -240,6 +248,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -543,7 +585,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, OLED_S_Pin|OLED_SD_Pin|OLED_RST_Pin|OLED_DC_Pin
+  HAL_GPIO_WritePin(GPIOE, OLED_SCL_Pin|OLED_SDA_Pin|OLED_RST_Pin|OLED_DC_Pin
                           |LED3_Pin|CIN1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -552,9 +594,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, DIN1_Pin|DIN2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : OLED_S_Pin OLED_SD_Pin OLED_RST_Pin OLED_DC_Pin
+  /*Configure GPIO pins : OLED_SCL_Pin OLED_SDA_Pin OLED_RST_Pin OLED_DC_Pin
                            LED3_Pin */
-  GPIO_InitStruct.Pin = OLED_S_Pin|OLED_SD_Pin|OLED_RST_Pin|OLED_DC_Pin
+  GPIO_InitStruct.Pin = OLED_SCL_Pin|OLED_SDA_Pin|OLED_RST_Pin|OLED_DC_Pin
                           |LED3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -620,6 +662,12 @@ void StartDefaultTask(void *argument)
 	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
 	oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
 
+	gyro_Init();
+	uint8_t val[2] = {0, 0};
+	readByte(0x37, val);
+	sprintf(OLED_row4, "gyro1: %5d", val[0]);
+	sprintf(OLED_row5, "gyro2: %5d", val[1]);
+
 /* Infinite loop */
   for(;;)
   {
@@ -627,7 +675,7 @@ void StartDefaultTask(void *argument)
 		  continue;
 
 	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
-	  forward(145);
+	  forward(150);
 	  osDelay(5000);
 
   }

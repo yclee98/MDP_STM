@@ -59,10 +59,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define OLED_S_Pin GPIO_PIN_5
-#define OLED_S_GPIO_Port GPIOE
-#define OLED_SD_Pin GPIO_PIN_6
-#define OLED_SD_GPIO_Port GPIOE
+#define OLED_SCL_Pin GPIO_PIN_5
+#define OLED_SCL_GPIO_Port GPIOE
+#define OLED_SDA_Pin GPIO_PIN_6
+#define OLED_SDA_GPIO_Port GPIOE
 #define CIN2_Pin GPIO_PIN_5
 #define CIN2_GPIO_Port GPIOC
 #define OLED_RST_Pin GPIO_PIN_7
