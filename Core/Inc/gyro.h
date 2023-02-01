@@ -1,6 +1,7 @@
 #ifndef INC_GYRO_H_
 #define INC_GYRO_H_
 
+#include "cmsis_os.h"
 #include "main.h"
 
 void gyro_Init();

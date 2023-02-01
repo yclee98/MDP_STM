@@ -80,6 +80,13 @@ const osThreadAttr_t oledTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for gyroTask */
+osThreadId_t gyroTaskHandle;
+const osThreadAttr_t gyroTask_attributes = {
+  .name = "gyroTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* USER CODE BEGIN PV */
 //
 //set to 1 once user button is pressed so that code will run
@@ -91,7 +98,7 @@ uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OL
 //Usart buffer
 uint8_t aRxBuffer[4];
 
-uint16_t pwmVal = 1200; // Speed of the Robot
+uint16_t pwmVal = 0; // Speed of the Robot
 uint16_t maxPwmVal = 7000; // Max Speed of the Robot
 uint16_t minPwmVal = 1200; // Min Speed of the Robot
 uint16_t pwmValC = 0;	// Speed of wheel C
@@ -115,6 +122,7 @@ void StartDefaultTask(void *argument);
 void syncMotor(void *argument);
 void encoder(void *argument);
 void oledDisplayTask(void *argument);
+void StartGyroTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -159,12 +167,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
   OLED_Init();
   SerialComm_Init();
+  start = 0;
   //Motor_Init();
 
-  //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-//  syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
-//  encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
-//  oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
+  encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
+  oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
+  gyroTaskHandle = osThreadNew(StartGyroTask, NULL, &gyroTask_attributes);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -641,7 +651,6 @@ static void MX_GPIO_Init(void)
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 	if(GPIO_Pin == User_Button_Pin && start == 0){
 		start = 1;
-		defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 	}
 }
 
@@ -658,21 +667,15 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
-	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
-	oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
-
-	gyro_Init();
-	uint8_t val[2] = {0, 0};
-	readByte(0x37, val);
-	sprintf(OLED_row4, "gyro1: %5d", val[0]);
-	sprintf(OLED_row5, "gyro2: %5d", val[1]);
+	sprintf(OLED_row0, "start task");
 
 /* Infinite loop */
   for(;;)
   {
-	  if(start == 0)
+	  if(start == 0){
+		  osDelay(1000);
 		  continue;
+	  }
 
 	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
 	  forward(150);
@@ -696,7 +699,7 @@ void syncMotor(void *argument)
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
-	sprintf(OLED_row0, "Ready motor");
+	//sprintf(OLED_row0, "Ready motor1");
 
 	/* Infinite loop */
 	for(;;)
@@ -704,33 +707,33 @@ void syncMotor(void *argument)
 //		htim1.Instance->CCR4 = 250;
 		pwmValC = pwmVal;
 		pwmValD = pwmVal;
-//
-//		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
-//		continue;
-//		while(abs(speedDiff) >= 50)// Wheel not in sync
-//		{
-//			if (pwmValC - pwmVal > 100)
-//			{
-//				break;
-//			}
-//			if(speedDiff > 0) // C Wheel faster than D Wheel
-//			{
-//				pwmValD += 10;
-//			}
-//			else
-//			{
-//				pwmValD -= 10;
-//				if(pwmValD <= minPwmVal)
-//				{
-//					pwmValD = minPwmVal;
-//					pwmValC = minPwmVal;
-//				}
-//			}
-//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
-//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
-//			osDelay(100);
-//		}
+
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
+
+		while(abs(speedDiff) >= 50)// Wheel not in sync
+		{
+			if (pwmValC - pwmVal > 100)
+			{
+				break;
+			}
+			if(speedDiff > 0) // C Wheel faster than D Wheel
+			{
+				pwmValD += 10;
+			}
+			else
+			{
+				pwmValD -= 10;
+				if(pwmValD <= minPwmVal)
+				{
+					pwmValD = minPwmVal;
+					pwmValC = minPwmVal;
+				}
+			}
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
+			osDelay(100);
+		}
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
 		osDelay(100);
@@ -806,8 +809,8 @@ void encoder(void *argument)
 
 			speedDiff = cWheelSpeed - dWheelSpeed;
 
-			sprintf(OLED_row2, "C speed: %5d", cWheelSpeed);
-			sprintf(OLED_row3, "D speed: %5d", dWheelSpeed);
+			sprintf(OLED_row1, "C speed: %5d", cWheelSpeed);
+			sprintf(OLED_row2, "D speed: %5d", dWheelSpeed);
 		}
 		osDelay(10);
 	}
@@ -825,6 +828,7 @@ void oledDisplayTask(void *argument)
 {
   /* USER CODE BEGIN oledDisplayTask */
   /* Infinite loop */
+	sprintf(OLED_row1, "OLED ready");
   for(;;)
   {
 		OLED_ShowString(10,0,OLED_row0);
@@ -834,8 +838,40 @@ void oledDisplayTask(void *argument)
 		OLED_ShowString(10,40,OLED_row4);
 		OLED_ShowString(10,50,OLED_row5);
 		OLED_Refresh_Gram();
+		osDelay(1000);
   }
   /* USER CODE END oledDisplayTask */
+}
+
+/* USER CODE BEGIN Header_StartGyroTask */
+/**
+* @brief Function implementing the gyroTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartGyroTask */
+void StartGyroTask(void *argument)
+{
+  /* USER CODE BEGIN StartGyroTask */
+		gyro_Init();
+		uint8_t val[2] = {0, 0};
+		int16_t tick = HAL_GetTick();
+		double offset = 7.848882995; //may need to ownself determine
+
+		int16_t angular_speed = 0;
+		double angle = 0;
+  /* Infinite loop */
+  for(;;)
+  {
+	  readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
+		angular_speed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte
+		angle = ((double)(angular_speed)+offset) * ((HAL_GetTick() - tick) / 16400.0);
+		sprintf(OLED_row4, "gyro1: %5.2d", val[0]);
+		sprintf(OLED_row5, "gyro2: %5.2d", val[1]);
+		sprintf(OLED_row3, "%d", angle);
+    osDelay(1);
+  }
+  /* USER CODE END StartGyroTask */
 }
 
 /**

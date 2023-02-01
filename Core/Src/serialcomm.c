@@ -4,6 +4,7 @@ extern UART_HandleTypeDef huart3;
 extern uint8_t OLED_row0[20];
 
 extern uint8_t aRxBuffer[4];
+uint8_t aTxBuffer[13];
 
 void SerialComm_Init(){
 	HAL_UART_Receive_IT(&huart3, (uint8_t *)aRxBuffer,4);
@@ -23,3 +24,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	HAL_UART_Receive_IT(huart,(uint8_t *)aRxBuffer,4); //setup new receive interrupt
 }
 
+//void printToSerial(int count, int value){
+//	sprintf(aTxBuffer, "%4d,%4d\n\r", count, value);
+//	HAL_UART_Transmit(&huart3,aTxBuffer,13,0xFFFF);
+//}
