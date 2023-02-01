@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -90,24 +90,22 @@ const osThreadAttr_t gyroTask_attributes = {
 //
 //set to 1 once user button is pressed so that code will run
 int start = 0;
+extern int16_t target_angle; // target angle of rotation,
+extern int16_t Kp;
+extern float Kd;
+extern float Ki;
+extern int16_t rpm;         // speed in rpm number of count/sec * 60 sec  divide by 260 count per round
+extern int16_t pwmMax; // Maximum PWM value = 7200 keep the maximum value too 7000
+extern int16_t no_of_tick;
+
+Motor motorC;
+Motor motorD;
 
 //OLED row display
 uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OLED_row5[20];
 
 //Usart buffer
 uint8_t aRxBuffer[4];
-
-uint16_t pwmVal = 0; // Speed of the Robot
-uint16_t maxPwmVal = 7000; // Max Speed of the Robot
-uint16_t minPwmVal = 1200; // Min Speed of the Robot
-uint16_t pwmValC = 0;	// Speed of wheel C
-uint16_t pwmValD = 0;	// Speed of wheel D
-
-int speedDiff = 0;
-
-
-//gyro
-double totalAngle;
 
 /* USER CODE END PV */
 
@@ -132,6 +130,22 @@ void StartGyroTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
+	if (htim == &ENCODER_C_HTIM)
+	{
+		motorC.counter = __HAL_TIM_GET_COUNTER(htim);
+		motorC.count = (int16_t)motorC.counter;
+		motorC.position = motorC.count/4;  //x1 Encoding
+		motorC.angle = motorC.count/2; // x2 encoding
+	}
+	else if (htim == &ENCODER_D_HTIM)
+	{
+		motorD.counter = __HAL_TIM_GET_COUNTER(htim);
+		motorD.count = (int16_t)motorD.counter;
+		motorD.position = motorD.count/4;  //x1 Encoding
+		motorD.angle = motorD.count/2; // x2 encoding
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -167,39 +181,37 @@ int main(void)
   MX_TIM8_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  OLED_Init();
-  SerialComm_Init();
-  start = 0;
-  Motor_Init();
+	OLED_Init();
+	SerialComm_Init();
+	start = 0;
+	//Motor_Init();
 
-
-
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  //syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
-  //encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
-  oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
-  gyroTaskHandle = osThreadNew(StartGyroTask, NULL, &gyroTask_attributes);
+	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+	syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
+	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
+	oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
+	gyroTaskHandle = osThreadNew(StartGyroTask, NULL, &gyroTask_attributes);
   /* USER CODE END 2 */
 
   /* Init scheduler */
   osKernelInitialize();
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /**
 * @}
@@ -214,12 +226,12 @@ int main(void)
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	while (1)
+	{
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+	}
   /* USER CODE END 3 */
 }
 
@@ -663,171 +675,175 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	sprintf(OLED_row0, "start task");
 
-/* Infinite loop */
-  for(;;)
-  {
-	  if(start == 0){
-		  osDelay(1000);
-		  continue;
-	  }
+	/* Infinite loop */
+	for(;;)
+	{
+		if(start == 0){
+			osDelay(1000);
+			continue;
+		}
 
 	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
 	  forward(150);
 
 	  osDelay(3000);
 
-  }
+	}
   /* USER CODE END 5 */
 }
 
 /* USER CODE BEGIN Header_syncMotor */
 /**
-* @brief Function implementing the syncMotorTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the syncMotorTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_syncMotor */
 void syncMotor(void *argument)
 {
   /* USER CODE BEGIN syncMotor */
-//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
-//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
-//	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	HAL_TIM_Encoder_Start_IT(&htim2, TIM_CHANNEL_ALL);
+	HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
+	rpm = (int)((1000/no_of_tick) * 60/260);  // For calculating motor rpm - by multiplying it with speed value
 
-	int calServoPwm = 150;
+	target_angle = 2000; // rotate 720 degree
 
-	//sprintf(OLED_row0, "Ready motor1");
+	motorC.angle = 0;
+	motorC.error = target_angle - motorC.angle;
+	motorC.error_old = 0;
+	motorC.error_area = 0;
+	motorD.angle = 0;
+	motorD.error = target_angle - motorD.angle;
+	motorD.error_old = 0;
+	motorD.error_area = 0;
+
+	Kp = 20;       // 10
+	Ki = 0.001;   // 0.001
+	Kd = 0000;
+	motorC.millisOld = HAL_GetTick(); // get time value before starting - for PID
+	motorD.millisOld = HAL_GetTick(); // get time value before starting - for PID
+
+	int stopC = 0;
+	int stopD = 0;
 
 	/* Infinite loop */
 	for(;;)
 	{
-//		htim1.Instance->CCR4 = 250;
-		pwmValC = pwmVal;
-		pwmValD = pwmVal;
+		if (start==0)
+		{
+			motorC.pwmVal = 0;
+			motorD.pwmVal = 0;
+			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_3,motorC.pwmVal);
+			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_4,motorD.pwmVal);
 
-		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
-		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
+			motorC.err = 0;// for checking whether error has settle down near to zero
+			motorC.angle = 0;
+			motorC.error_old = 0;
+			motorC.error_area = 0;
+			motorC.error = target_angle - motorC.angle;
+			stopC = 0;
 
-		sprintf(OLED_row5, "cal %d", calServoPwm);
-		osDelayUntil(20);
+			motorD.err = 0;// for checking whether error has settle down near to zero
+			motorD.angle = 0;
+			motorD.error_old = 0;
+			motorD.error_area = 0;
+			motorD.error = target_angle - motorD.angle;
+			stopD = 0;
+		}
 
-		calServoPwm = (int)(150 + totalAngle*4);
-		if(calServoPwm > 200)
-			calServoPwm = 200;
-		if(calServoPwm < 100)
-			calServoPwm = 100;
+		while (start==0){ //wait for the User PB to be pressed
+			osDelay(500);
+			motorC.millisOld = HAL_GetTick(); // get time value before starting - for PID
+			motorD.millisOld = HAL_GetTick(); // get time value before starting - for PID
+		}
+		if (!stopD)
+			PID_Control(&motorD, 0); // call the PID control loop calculation
+		if (!stopC)
+			PID_Control(&motorC, 1); // call the PID control loop calculation
+		//motorC.pwmVal = 1000;          // overwrite PID control above, minimum pwmVal = 1000?
+		//motorD.pwmVal = 1000;          // overwrite PID control above, minimum pwmVal = 1000?
+		if (!stopC)
+			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_3,motorC.pwmVal); // output PWM waveform to drive motor
+		if (!stopD)
+			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_4,motorD.pwmVal); // output PWM waveform to drive motor
 
-	   osDelayUntil(10);
-	   htim1.Instance->CCR4 = calServoPwm;
-	   osDelayUntil(10);
+		if (abs(motorC.error) < 10){ // error is less than 3 deg
+			motorC.err++; // to keep track how long it has reached steady state
+			motorC.angle = -(int)(motorC.position*360/260);  //calculate the angle
+			motorC.error = target_angle - motorC.angle; // calculate the error
+		}
+		if (abs(motorD.error) < 10){ // error is less than 3 deg
+			motorD.err++; // to keep track how long it has reached steady state
+			motorD.angle = (int)(motorD.position*360/260);  //calculate the angle
+			motorD.error = target_angle - motorD.angle; // calculate the error
+		}
 
-	   osDelay(100);
+		if (motorC.err > 2 && !stopC) { // error has settled to within the acceptance ranges
+			stopC = 1;
+			motorC.pwmVal = 0; //stop
+			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_3,motorC.pwmVal);
+		}
+		if (motorD.err > 2 && !stopD) {
+			stopD = 1;
+			motorD.pwmVal = 0; //stop
+			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_4,motorD.pwmVal);
+		}
+		if (stopC && stopD)
+		{
+			//continue to send the data values for display
+
+			start = 0;  // wait for PB to restart
+			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10); //Buzzer On
+			osDelay(500);
+			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10); //Buzzer Off
+		}
+		osDelay(50);
 	}
   /* USER CODE END syncMotor */
 }
 
 /* USER CODE BEGIN Header_encoder */
 /**
-* @brief Function implementing the encoderTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the encoderTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_encoder */
 void encoder(void *argument)
 {
   /* USER CODE BEGIN encoder */
-
 	/* Infinite loop */
-	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
-	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
-
-	int cnt1, cnt2, cWheelSpeed;
-	int cnt3, cnt4, dWheelSpeed;
-	uint32_t tick;
-
-	tick = HAL_GetTick();
-	cnt1 = __HAL_TIM_GET_COUNTER(&htim4);
-	cnt3 = __HAL_TIM_GET_COUNTER(&htim2);
-
-	for(;;)
-	{
-		if(pwmVal < 1000){
-			osDelay(1000);
-			continue;
-		}
-		if(HAL_GetTick()-tick > 1000L)
-		{
-			cnt2 = __HAL_TIM_GET_COUNTER(&htim4);
-			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim4))
-			{
-				if(cnt2 < cnt1)
-					cWheelSpeed = cnt1 - cnt2;
-				else
-					cWheelSpeed = (65535 - cnt2) + cnt1;
-
-			}
-			else
-			{
-				if(cnt2 > cnt1)
-					cWheelSpeed = cnt2 - cnt1;
-				else
-					cWheelSpeed = (65535 - cnt1) + cnt2;
-			}
-			cnt1 = __HAL_TIM_GET_COUNTER(&htim4);
-
-			cnt4 = __HAL_TIM_GET_COUNTER(&htim2);
-			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2))
-			{
-				if(cnt4 < cnt3)
-					dWheelSpeed = cnt3 - cnt4;
-				else
-					dWheelSpeed = (65535 - cnt4) + cnt3;
-
-			}
-			else
-			{
-				if(cnt4 > cnt3)
-					dWheelSpeed = cnt4 - cnt3;
-				else
-					dWheelSpeed = (65535 - cnt3) + cnt4;
-			}
-			cnt3 = __HAL_TIM_GET_COUNTER(&htim2);
-			tick = HAL_GetTick();
-
-			speedDiff = cWheelSpeed - dWheelSpeed;
-
-			sprintf(OLED_row0, "C speed: %5d", cWheelSpeed);
-			sprintf(OLED_row1, "D speed: %5d", dWheelSpeed);
-		}
-		osDelay(100);
-	}
+	osDelay(10000);
   /* USER CODE END encoder */
 }
 
 /* USER CODE BEGIN Header_oledDisplayTask */
 /**
-* @brief Function implementing the oledTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the oledTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_oledDisplayTask */
 void oledDisplayTask(void *argument)
 {
   /* USER CODE BEGIN oledDisplayTask */
-  /* Infinite loop */
-	//sprintf(OLED_row1, "OLED ready");
-  for(;;)
-  {
+	/* Infinite loop */
+	sprintf(OLED_row1, "OLED ready");
+	for(;;)
+	{
 		OLED_ShowString(10,0,OLED_row0);
 		OLED_ShowString(10,10,OLED_row1);
 		OLED_ShowString(10,20,OLED_row2);
@@ -836,16 +852,16 @@ void oledDisplayTask(void *argument)
 		OLED_ShowString(10,50,OLED_row5);
 		OLED_Refresh_Gram();
 		osDelay(1000);
-  }
+	}
   /* USER CODE END oledDisplayTask */
 }
 
 /* USER CODE BEGIN Header_StartGyroTask */
 /**
-* @brief Function implementing the gyroTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the gyroTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartGyroTask */
 void StartGyroTask(void *argument)
 {
@@ -883,38 +899,17 @@ void StartGyroTask(void *argument)
 }
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM3 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM3) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
-}
-
-/**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1)
+	{
+	}
   /* USER CODE END Error_Handler_Debug */
 }
 
@@ -929,7 +924,7 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
+	/* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }

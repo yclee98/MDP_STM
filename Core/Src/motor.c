@@ -2,46 +2,57 @@
 
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim8;
-extern TIM_HandleTypeDef htim4;
-extern TIM_HandleTypeDef htim2;
+extern int16_t oldposC;    // // see SysTick_Handler in stm32f4xx_it.c
+extern int16_t oldposD;    // // see SysTick_Handler in stm32f4xx_it.c
 
-extern uint16_t pwmVal; // Speed of the Robot
-extern uint16_t maxPwmVal; // Max Speed of the Robot
-extern uint16_t minPwmVal; // Min Speed of the Robot
-extern uint16_t pwmValC;	// Speed of wheel C
-extern uint16_t pwmValD;	// Speed of wheel D
-
-extern int speedDiff;
-extern double totalAngle;
-extern uint8_t OLED_row5[20], OLED_row4[20];;
+//Motor
+int16_t no_of_tick = 50; // number of tick used in SysTick to calculate speed, in msec
+int16_t target_angle = 0; // target angle of rotation,
+int16_t Kp = 0;
+float Kd = 0;
+float Ki = 0;
+int16_t rpm = 0;         // speed in rpm number of count/sec * 60 sec  divide by 260 count per round
+int16_t pwmMax = 3000; // Maximum PWM value = 7200 keep the maximum value too 7000
 
 void Motor_Init(){
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-
-	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
-	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
-
 }
 
-void setSpeed(uint16_t speed)
-{
-	if(speed == 0){
+int16_t PID_Control(Motor *motor, int flipped){
+	//Control Loop
+	if (abs(motor->error)>2){ //more than 2 degree difference
+		//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10); //Buzzer
+		motor->angle = (int)(motor->position*360/265);  // supposed to be 260 tick per revolution?
+		if (flipped)
+			motor->angle = -motor->angle;
+		motor->error = target_angle - motor->angle;
 
-	}
-	else if (speed > maxPwmVal)
-	{
-		speed=maxPwmVal;
-	}
-	else if (speed < minPwmVal)
-	{
-		speed=minPwmVal;
-	}
+		if (motor->error > 0)
+			setDirection(1); //forward
+		else
+			setDirection(0); //reverse direction
 
-	pwmVal = speed;
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmVal);
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmVal);
+		motor->millisNow = HAL_GetTick();
+		motor->dt = (motor->millisNow - motor->millisOld); // time elapsed in millisecond
+		motor->millisOld = motor->millisNow; // store the current time for next round
+
+		motor->error_area = motor->error_area + motor->error*motor->dt; // area under error for Ki
+
+		motor->error_change = motor->error - motor->error_old; // change in error
+		motor->error_old = motor->error; //store the error for next round
+		motor->error_rate = motor->error_change/motor->dt; // for Kd
+
+		motor->pwmVal = (int)(motor->error*Kp + motor->error_area*Ki + motor->error_rate*Kd);  // PID
+
+		//pwmVal = 2000;   // overwrite PID above, minimum pwmVal = 1000
+
+		if (motor->pwmVal > pwmMax)  // Clamp the PWM to its maximum value
+			motor->pwmVal = pwmMax;
+
+		return(motor->pwmVal);
+		//__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_4,pwmVal); // output the valie
+	} // if loop
 }
 
 void setDirection(bool isForward)
@@ -93,52 +104,17 @@ void forward(int var)
 
 void backward()
 {
-	htim1.Instance->CCR4 = 150;
-
 	setDirection(0);
-	setSpeed(2000);
-	osDelay(5000);
-
-	setSpeed(0);
-}
-
-void test()
-{
-	HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- forward
-	HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- forward
-	HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_RESET);
-}
-
-void testrun()
-{
-	test();
-
-	setSpeed(2000);
-
-		osDelay(5000);
-
-		setSpeed(0);
 }
 
 void turnLeft()
 {
 	htim1.Instance->CCR4 = 85;
 	setDirection(1);
-	setSpeed(2000);
-
-	osDelay(5000);
-
-	setSpeed(0);
 }
 
 void turnRight()
 {
 	htim1.Instance->CCR4 = 250;
 	setDirection(1);
-	setSpeed(2000);
-
-	osDelay(5000);
-
-	setSpeed(0);
 }
