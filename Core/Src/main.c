@@ -22,8 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "oled.h"
-#include "serialcomm.h"
+
 #include "motor.h"
 #include "gyro.h"
 /* USER CODE END Includes */
@@ -107,6 +106,9 @@ uint16_t pwmValD = 0;	// Speed of wheel D
 int speedDiff = 0;
 
 
+//gyro
+double totalAngle;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -168,11 +170,13 @@ int main(void)
   OLED_Init();
   SerialComm_Init();
   start = 0;
-  //Motor_Init();
+  Motor_Init();
+
+
 
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
-  encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
+  //syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
+  //encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
   oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
   gyroTaskHandle = osThreadNew(StartGyroTask, NULL, &gyroTask_attributes);
   /* USER CODE END 2 */
@@ -679,7 +683,8 @@ void StartDefaultTask(void *argument)
 
 	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
 	  forward(150);
-	  osDelay(5000);
+
+	  osDelay(3000);
 
   }
   /* USER CODE END 5 */
@@ -695,9 +700,11 @@ void StartDefaultTask(void *argument)
 void syncMotor(void *argument)
 {
   /* USER CODE BEGIN syncMotor */
-	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
+//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
+//	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+
+	int calServoPwm = 150;
 
 	//sprintf(OLED_row0, "Ready motor1");
 
@@ -711,32 +718,20 @@ void syncMotor(void *argument)
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
 
-		while(abs(speedDiff) >= 50)// Wheel not in sync
-		{
-			if (pwmValC - pwmVal > 100)
-			{
-				break;
-			}
-			if(speedDiff > 0) // C Wheel faster than D Wheel
-			{
-				pwmValD += 10;
-			}
-			else
-			{
-				pwmValD -= 10;
-				if(pwmValD <= minPwmVal)
-				{
-					pwmValD = minPwmVal;
-					pwmValC = minPwmVal;
-				}
-			}
-			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
-			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
-			osDelay(100);
-		}
-		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, pwmValC);
-		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, pwmValD);
-		osDelay(100);
+		sprintf(OLED_row5, "cal %d", calServoPwm);
+		osDelayUntil(20);
+
+		calServoPwm = (int)(150 + totalAngle*4);
+		if(calServoPwm > 200)
+			calServoPwm = 200;
+		if(calServoPwm < 100)
+			calServoPwm = 100;
+
+	   osDelayUntil(10);
+	   htim1.Instance->CCR4 = calServoPwm;
+	   osDelayUntil(10);
+
+	   osDelay(100);
 	}
   /* USER CODE END syncMotor */
 }
@@ -766,8 +761,10 @@ void encoder(void *argument)
 
 	for(;;)
 	{
-		if(pwmVal < 1000)
+		if(pwmVal < 1000){
+			osDelay(1000);
 			continue;
+		}
 		if(HAL_GetTick()-tick > 1000L)
 		{
 			cnt2 = __HAL_TIM_GET_COUNTER(&htim4);
@@ -809,10 +806,10 @@ void encoder(void *argument)
 
 			speedDiff = cWheelSpeed - dWheelSpeed;
 
-			sprintf(OLED_row1, "C speed: %5d", cWheelSpeed);
-			sprintf(OLED_row2, "D speed: %5d", dWheelSpeed);
+			sprintf(OLED_row0, "C speed: %5d", cWheelSpeed);
+			sprintf(OLED_row1, "D speed: %5d", dWheelSpeed);
 		}
-		osDelay(10);
+		osDelay(100);
 	}
   /* USER CODE END encoder */
 }
@@ -828,7 +825,7 @@ void oledDisplayTask(void *argument)
 {
   /* USER CODE BEGIN oledDisplayTask */
   /* Infinite loop */
-	sprintf(OLED_row1, "OLED ready");
+	//sprintf(OLED_row1, "OLED ready");
   for(;;)
   {
 		OLED_ShowString(10,0,OLED_row0);
@@ -855,21 +852,32 @@ void StartGyroTask(void *argument)
   /* USER CODE BEGIN StartGyroTask */
 		gyro_Init();
 		uint8_t val[2] = {0, 0};
-		int16_t tick = HAL_GetTick();
-		double offset = 7.848882995; //may need to ownself determine
+		uint32_t currentTick, previousTick=0;
+		double offset = 0;//7.848882995;
+		int16_t angularSpeed = 0;
+		double measuredAngle = 0;
+		totalAngle = 0;
 
-		int16_t angular_speed = 0;
-		double angle = 0;
   /* Infinite loop */
   for(;;)
   {
-	  readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
-		angular_speed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte
-		angle = ((double)(angular_speed)+offset) * ((HAL_GetTick() - tick) / 16400.0);
-		sprintf(OLED_row4, "gyro1: %5.2d", val[0]);
-		sprintf(OLED_row5, "gyro2: %5.2d", val[1]);
-		sprintf(OLED_row3, "%d", angle);
-    osDelay(1);
+	   readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
+	   angularSpeed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte; degree/second
+	   currentTick = HAL_GetTick(); //millisecond
+	   measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
+
+	   totalAngle += measuredAngle;
+
+	   if(totalAngle > 720)
+		   totalAngle -=720;
+	   if(totalAngle < -720)
+		   totalAngle += 720;
+
+		sprintf(OLED_row2, "as %d", angularSpeed);
+//		sprintf(OLED_row3, "ma %d", (int)measuredAngle);
+		//sprintf(OLED_row4, "ta %d", (int)totalAngle);
+		previousTick = currentTick;
+		osDelay(500);
   }
   /* USER CODE END StartGyroTask */
 }

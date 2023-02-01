@@ -3,7 +3,7 @@
 #define INC_MOTOR_H_
 
 #include "main.h"
-#include <stdbool.h>
+
 /*
  * center = 150
  * extreme right = 250
