@@ -101,6 +101,9 @@ extern int16_t no_of_tick;
 Motor motorC;
 Motor motorD;
 
+//gyro
+double totalAngle;
+
 //OLED row display
 uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OLED_row5[20];
 
@@ -694,7 +697,7 @@ void StartDefaultTask(void *argument)
 		}
 
 	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
-	  forward(150);
+	  //forward(150);
 
 	  osDelay(3000);
 
@@ -719,7 +722,7 @@ void syncMotor(void *argument)
 	HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
 	rpm = (int)((1000/no_of_tick) * 60/260);  // For calculating motor rpm - by multiplying it with speed value
 
-	target_angle = 2000; // rotate 720 degree
+	target_angle = 7000; // rotate 720 degree
 
 	motorC.angle = 0;
 	motorC.error = target_angle - motorC.angle;
@@ -826,7 +829,20 @@ void encoder(void *argument)
 {
   /* USER CODE BEGIN encoder */
 	/* Infinite loop */
-	osDelay(10000);
+	int calPWM = 0;
+	for(;;){
+		sprintf(OLED_row5, "cal %d", calPWM);
+				sprintf(OLED_row4, "ta %d", (int)totalAngle);
+				osDelay(50);
+				calPWM = (int)(150 + totalAngle*5);
+				if(calPWM > 200)
+				   calPWM = 200;
+			    if(calPWM < 100)
+				   calPWM = 100;
+			   htim1.Instance->CCR4 = calPWM;
+			   osDelay(50);
+	}
+	//osDelay(10000);
   /* USER CODE END encoder */
 }
 

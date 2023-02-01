@@ -14,9 +14,13 @@ float Ki = 0;
 int16_t rpm = 0;         // speed in rpm number of count/sec * 60 sec  divide by 260 count per round
 int16_t pwmMax = 3000; // Maximum PWM value = 7200 keep the maximum value too 7000
 
+//gyro
+extern double totalAngle;
+extern uint8_t OLED_row5[20], OLED_row4[20];;
+
 void Motor_Init(){
-	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
+//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
+//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
 }
 
 int16_t PID_Control(Motor *motor, int flipped){
@@ -81,8 +85,6 @@ void forward(int var)
 	osDelay(200);
 	totalAngle = 0;
 
-	setSpeed(1200);
-
 	uint32_t tick = HAL_GetTick();
 
 	while(HAL_GetTick() - tick < 7000L){
@@ -97,9 +99,6 @@ void forward(int var)
 	   htim1.Instance->CCR4 = calPWM;
 	   osDelay(50);
 	}
-	setSpeed(0);
-
-
 }
 
 void backward()
