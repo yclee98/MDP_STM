@@ -86,6 +86,8 @@ void Error_Handler(void);
 #define PWMD_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
+#define ENCODER_C_HTIM htim4
+#define ENCODER_D_HTIM htim2
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
