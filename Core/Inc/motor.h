@@ -23,16 +23,21 @@ struct motor
 	int16_t position_target; // target position
 	int16_t error;           // error between target and actual
 	int32_t error_area;  // area under error - to calculate I for PI implementation
-	int32_t error_old, error_change;
 	float error_rate; // to calculate D for PID control
+	int32_t error_old, error_change;
 	int32_t millisOld, millisNow, dt; // to calculate I and D for PID control
+	int motor; // Indicate motor
+	int reset; // Indicate if motor has been reset
+	TIM_HandleTypeDef *htim; // Encoder Timer
 } typedef Motor;
 
 void Motor_Init();
 void ServoCenter();
+void stopMotor(Motor *motor);
+void resetMotor(Motor *motor);
 void setSpeed(uint16_t speed);
-void setDirection(bool isForward);
-void forward();
+void setDirection(bool isForward, int motor);
+void forward(double var);
 void backward();
 void turnLeft();
 void turnRight();
