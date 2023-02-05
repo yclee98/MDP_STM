@@ -17,13 +17,10 @@ int16_t pwmMin = 600;
 
 extern double goDist;
 
-//gyro
-extern double totalAngle;
-extern uint8_t OLED_row5[20], OLED_row4[20];;
+extern uint8_t isMoving;
 
 void Motor_Init(){
-	//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3);
-	//	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
+
 }
 
 void resetMotor(Motor *motor)
@@ -93,6 +90,8 @@ int16_t PID_Control(Motor *motor, int flipped){
 	} // if loop
 }
 
+//isForward 1,0
+//motor 1=c,2=d, 0=both
 void setDirection(bool isForward, int motor)
 {
 	if (isForward){// move forward
@@ -138,35 +137,31 @@ void setDirection(bool isForward, int motor)
 
 void forward(double var)
 {
-	htim1.Instance->CCR4 = 100;
-	osDelay(500);
-	htim1.Instance->CCR4 = 147;
-	setDirection(1, 0);
 	goDist = var;
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 5000);
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 5000);
-//	int calPWM = 0;
-//
-//	htim1.Instance->CCR4 = var;//145;
-//	osDelay(50);
-//	setDirection(1, 0);
-//	osDelay(200);
-//	totalAngle = 0;
-//
-//	uint32_t tick = HAL_GetTick();
-//
-//	while(HAL_GetTick() - tick < 7000L){
-//		sprintf(OLED_row5, "cal %d", calPWM);
-//		sprintf(OLED_row4, "ta %d", (int)totalAngle);
-//		osDelay(50);
-//		calPWM = (int)(150 + totalAngle*5);
-//		if(calPWM > 200)
-//			calPWM = 200;
-//		if(calPWM < 100)
-//			calPWM = 100;
-//		htim1.Instance->CCR4 = calPWM;
-//		osDelay(50);
-//	}
+	htim1.Instance->CCR4 = 100;
+	osDelay(1000);
+	htim1.Instance->CCR4 = 147;
+
+	setDirection(1, 0);
+	isMoving = 1;
+	osDelay(50);
+}
+
+void motorStop(){
+	isMoving = 0;
+	osDelay(50);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
+	osDelay(50);
+}
+
+void testMotorSpeed(){
+	goDist = 200;
+	setDirection(1,0);
+	osDelay(50);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 1500);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 1500);
+	osDelay(50);
 }
 
 void backward()

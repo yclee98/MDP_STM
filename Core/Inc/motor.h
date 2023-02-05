@@ -38,8 +38,11 @@ void resetMotor(Motor *motor);
 void setSpeed(uint16_t speed);
 void setDirection(bool isForward, int motor);
 void forward(double var);
+void motorStop();
 void backward();
 void turnLeft();
 void turnRight();
+
+void testMotorSpeed();
 
 #endif /* INC_MOTOR_H_ */

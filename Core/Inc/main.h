@@ -33,6 +33,7 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdbool.h>
+#include "stdint.h"
 #include "oled.h"
 #include "serialcomm.h"
 /* USER CODE END Includes */

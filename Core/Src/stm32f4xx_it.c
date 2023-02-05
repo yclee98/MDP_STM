@@ -167,19 +167,19 @@ void DebugMon_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-	tick++;
-	if (tick == no_of_tick)	{ // assuming 1 msec tick, calculate speed every 50 msec?
-		motorC.speed = ((motorC.position - oldposC)*20*60/180);  // number of ticks/sec * 60 sec  diveide by 180 ticks per round
-		//motorC.speed = (motorC.position - oldposC); // change in position
-		oldposC = motorC.position;
-		//tick = 0;
-		//HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // LED
-		motorD.speed = ((motorD.position - oldposD)*20*60/180);  // number of ticks/sec * 60 sec  diveide by 180 ticks per round
-		//motorD.speed = (motorD.position - oldposD); // change in position
-		oldposD = motorD.position;
-		tick = 0;
-		//HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // LED
-	}
+//	tick++;
+//	if (tick == no_of_tick)	{ // assuming 1 msec tick, calculate speed every 50 msec?
+//		motorC.speed = ((motorC.position - oldposC)*20*60/180);  // number of ticks/sec * 60 sec  diveide by 180 ticks per round
+//		//motorC.speed = (motorC.position - oldposC); // change in position
+//		oldposC = motorC.position;
+//		//tick = 0;
+//		//HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // LED
+//		motorD.speed = ((motorD.position - oldposD)*20*60/180);  // number of ticks/sec * 60 sec  diveide by 180 ticks per round
+//		//motorD.speed = (motorD.position - oldposD); // change in position
+//		oldposD = motorD.position;
+//		tick = 0;
+//		//HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // LED
+//	}
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
 #if (INCLUDE_xTaskGetSchedulerState == 1 )
