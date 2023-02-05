@@ -39,7 +39,7 @@ void setSpeed(uint16_t speed);
 void setDirection(bool isForward, int motor);
 void forward(double var);
 void motorStop();
-void backward();
+void backward(double var);
 void turnLeft();
 void turnRight();
 

@@ -3,9 +3,9 @@
 #define PID_MAX  4000
 #define PID_MIN 700
 
-int16_t MOTOR_VELOCITY_REF = 400; //abt 226vel
+int16_t MOTOR_VELOCITY_REF = 600;
 
-float kp = 5;
+float kp = 4;
 float ki = 0.8;
 float kd = 0.2;
 

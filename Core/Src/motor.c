@@ -18,6 +18,7 @@ int16_t pwmMin = 600;
 extern double goDist;
 
 extern uint8_t isMoving;
+extern uint8_t direction;
 
 void Motor_Init(){
 
@@ -138,14 +139,23 @@ void setDirection(bool isForward, int motor)
 void forward(double var)
 {
 	goDist = var;
-	htim1.Instance->CCR4 = 100;
-	osDelay(1000);
 	htim1.Instance->CCR4 = 147;
-
+	osDelay(50);
 	setDirection(1, 0);
 	isMoving = 1;
-	osDelay(50);
+	direction = 1;
 }
+
+void backward(double var)
+{
+	goDist = var;
+	htim1.Instance->CCR4 = 147;
+	osDelay(50);
+	setDirection(0, 0);
+	isMoving = 1;
+	direction = -1;
+}
+
 
 void motorStop(){
 	isMoving = 0;
@@ -164,10 +174,7 @@ void testMotorSpeed(){
 	osDelay(50);
 }
 
-void backward()
-{
-	setDirection(0, 0);
-}
+
 
 void turnLeft()
 {

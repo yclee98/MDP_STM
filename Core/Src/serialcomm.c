@@ -56,8 +56,15 @@ void printPIDdebug(int value1,int value2, int value3, int value4, long value5){
 }
 
 
-void printVelocity(int value1,int value2, int value3, int value4){
+void printVelocity(int value1,int value2){
 	HAL_UART_Transmit(&huart3,"\r\n",2,0xFFFF);
-	sprintf(aTxBuffer, "%5d,%5d,%5d,%5d", value1,value2,value3,value4);
+	sprintf(aTxBuffer, "%5d,%5d", value1,value2);
 	HAL_UART_Transmit(&huart3,aTxBuffer,aTxBuffer,0xFFFF);
 }
+
+void printgyro(double value1, int value2){
+	HAL_UART_Transmit(&huart3,"\r\n",2,0xFFFF);
+	sprintf(aTxBuffer, "%5.2d, %5d", value1,value2);
+	HAL_UART_Transmit(&huart3,aTxBuffer,7,0xFFFF);
+}
+
