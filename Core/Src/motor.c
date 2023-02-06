@@ -16,7 +16,6 @@ int16_t pwmMax = 5000; // Maximum PWM value = 7200 keep the maximum value too 70
 int16_t pwmMin = 600;
 
 extern double goDist;
-
 extern uint8_t isMoving;
 extern int8_t direction;
 
@@ -142,8 +141,9 @@ void forward(double var)
 	htim1.Instance->CCR4 = 147;
 	osDelay(50);
 	setDirection(1, 0);
-	isMoving = 1;
 	direction = 1;
+	isMoving = 1;
+	osDelay(10);
 }
 
 void backward(double var)
@@ -152,16 +152,18 @@ void backward(double var)
 	htim1.Instance->CCR4 = 147;
 	osDelay(50);
 	setDirection(0, 0);
-	isMoving = 1;
 	direction = -1;
+	isMoving = 1;
+	osDelay(10);
 }
-
 
 void motorStop(){
 	isMoving = 0;
 	osDelay(50);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
+
+	htim1.Instance->CCR4 = 147;//return wheel straight
 	osDelay(50);
 }
 

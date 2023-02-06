@@ -719,9 +719,6 @@ void resetCar(){
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
 
-//	distC=0;
-//	distD=0;
-
 	totalAngle=0;
 }
 
@@ -905,8 +902,6 @@ void syncMotor(void *argument)
 
 				sprintf(OLED_row4, "pid C %d", motorCpid.output);
 				sprintf(OLED_row5, "pid D %d", motorDpid.output);
-
-
 			}
 			previousTick = currentTick;
 		}
@@ -1053,16 +1048,20 @@ void encoder(void *argument)
 	cnt3 = 0;//__HAL_TIM_GET_COUNTER(&htim2);
 	for(;;){
 		if(!isMoving){
-			osDelay(50);
 			previousTick = HAL_GetTick();
+			osDelay(100);
 			continue;
 		}
 		currentTick = HAL_GetTick();
 		if(currentTick - previousTick >= 100L){ //dont change, will affect the speed and pid
 			diffC = 0;
 			diffD = 0;
-			//encoderC
+
+			//get the counter after 100milisec
 			cnt2 = __HAL_TIM_GET_COUNTER(&htim4);
+			cnt4 = __HAL_TIM_GET_COUNTER(&htim2);
+
+			//encoderC
 			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim4))
 			{
 				if(cnt2 <= cnt1)
@@ -1077,10 +1076,8 @@ void encoder(void *argument)
 				else
 					diffC = (65535 - cnt1) + cnt2;
 			}
-			cnt1 = cnt2;
 
 			//encoderD
-			cnt4 = __HAL_TIM_GET_COUNTER(&htim2);
 			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2))
 			{
 				if(cnt4 <= cnt3)
@@ -1095,10 +1092,7 @@ void encoder(void *argument)
 				else
 					diffD = (65535 - cnt3) + cnt4;
 			}
-			cnt3 = cnt4;
 
-//			distC += abs(diffC)/fullRotationWheel*circumferenceWheel;
-//			distD += abs(diffD)/fullRotationWheel*circumferenceWheel;
 			encoderC.distance += abs(diffC)/fullRotationWheel*circumferenceWheel;
 			encoderD.distance += abs(diffD)/fullRotationWheel*circumferenceWheel;
 
@@ -1117,7 +1111,15 @@ void encoder(void *argument)
 			sprintf(OLED_row1, "dist %d", avgDist);
 			sprintf(OLED_row2, "spdC %d", encoderC.velocity);
 			sprintf(OLED_row3, "spdD %d", encoderD.velocity);
-			previousTick = currentTick;
+
+			//get the counter before we start the 100milisec
+			cnt1 = __HAL_TIM_GET_COUNTER(&htim4);
+			cnt3 = __HAL_TIM_GET_COUNTER(&htim2);
+
+			//dont use currentTick to set previousTick since this thread might take more than 100milisec to run
+			//and will straight start looping even before 100milisec since the previous end of the loop
+			//we want this to run 100milisec after this loop end
+			previousTick = HAL_GetTick();
 		}
 		osDelay(10);
 	}
