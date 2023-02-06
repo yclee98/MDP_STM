@@ -3,7 +3,7 @@
 #define PID_MAX  4000
 #define PID_MIN 700
 
-int16_t MOTOR_VELOCITY_REF = 600;
+int16_t MOTOR_VELOCITY_REF = 500;
 
 float kp = 4;
 float ki = 0.8;

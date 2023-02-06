@@ -135,7 +135,7 @@ uint8_t pidEnable = 0;
 
 //flag to indicate if car moving
 volatile uint8_t isMoving = 0;
-volatile uint8_t direction = 0; // 1 for forward, -1 for reverse
+volatile int8_t direction = 0; // 1 for forward, -1 for reverse
 
 //encoder moving average
 mov_aver_intance encoderCma, encoderDma;
@@ -714,6 +714,8 @@ void resetCar(){
 
 	distC=0;
 	distD=0;
+
+	totalAngle=0;
 }
 
 
@@ -737,14 +739,18 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		forward(91*2);
-//		backward(91);
+		forward(120);
 		osDelay(10);
 		while(isMoving){
 			osDelay(100);
 		}
-		pidEnable = !pidEnable;
-		osDelay(5000);
+		osDelay(4000);
+		backward(120);
+		osDelay(10);
+		while(isMoving){
+			osDelay(100);
+		}
+		osDelay(4000);
 	}
 //	sprintf(OLED_row0, "start task");
 //	target_angle = 0;
@@ -817,94 +823,88 @@ void StartDefaultTask(void *argument)
 void syncMotor(void *argument)
 {
   /* USER CODE BEGIN syncMotor */
-	//start
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3); //motorC
 	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4); //motorD
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4); //servo motor
 
-//	encoder_reset(&encoderC);
-//	encoder_reset(&encoderD);
-//
-//	pid_reset(&motorCpid);
-//	pid_reset(&motorDpid);
-//
-//	reset_average_filter(&encoderCma);
-//	reset_average_filter(&encoderDma);
 	resetCar();
 
 	int motorCvel, motorDvel;
-	uint32_t currentTick, previousTick;
+	uint32_t currentTick, previousTick=0;
 
 	for (;;)
 	{
 		if(!isMoving){
 			osDelay(50);
-			previousTick = HAL_GetTick();;
+			previousTick = HAL_GetTick();
 			continue;
 		}
-		if(!pidEnable){
-			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 1200);
-			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 1200);
-			sprintf(OLED_row4, "pid C 1200");
-			sprintf(OLED_row5, "pid D 1200");
-			osDelay(1000);
-		}else if(pidEnable){
-			currentTick = HAL_GetTick();
+		currentTick = HAL_GetTick();
 
-			motorCvel = encoderC.velocity;
-			motorDvel = encoderD.velocity;
+		if(currentTick - previousTick > 50L){
+			if(!pidEnable){
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 1500);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 1500);
+				sprintf(OLED_row4, "pid C 1500");
+				sprintf(OLED_row5, "pid D 1500");
+				osDelay(1000);
+			}else if(pidEnable){
+				motorCvel = encoderC.velocity;
+				motorDvel = encoderD.velocity;
 
-			apply_average_filter(&encoderCma, motorCvel);
-			apply_average_filter(&encoderDma, motorDvel);
+				apply_average_filter(&encoderCma, motorCvel);
+				apply_average_filter(&encoderDma, motorDvel);
 
-			apply_pid(&motorCpid, encoderCma.out, currentTick-previousTick);
-			apply_pid(&motorDpid, encoderDma.out, currentTick-previousTick);
+				apply_pid(&motorCpid, encoderCma.out, currentTick-previousTick);
+				apply_pid(&motorDpid, encoderDma.out, currentTick-previousTick);
 
-			if(!isMoving){
-				osDelay(10);
-				continue;
+				if(!isMoving){
+					osDelay(10);
+					continue;
+				}
+
+				//forward
+				if(direction == 1){
+					if(motorCpid.output > 0){
+						setDirection(1,1);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+					}else{
+						setDirection(0,1);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+					}
+					if(motorDpid.output > 0){
+						setDirection(1,2);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+					}else{
+						setDirection(0,2);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+					}
+				}
+
+
+				//reverse
+				if(direction == -1){
+					if(motorCpid.output > 0){
+						setDirection(0,1);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+					}else{
+						setDirection(1,1);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+					}
+					if(motorDpid.output > 0){
+						setDirection(0,2);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+					}else{
+						setDirection(1,2);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+					}
+				}
+
+				sprintf(OLED_row4, "pid C %d", motorCpid.output);
+				sprintf(OLED_row5, "pid D %d", motorDpid.output);
+
+
 			}
-
-			//forward
-			if(direction == 1){
-				if(motorCpid.output > 0){
-					setDirection(1,1);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-				}else{
-					setDirection(0,1);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-				}
-				if(motorDpid.output > 0){
-					setDirection(1,2);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-				}else{
-					setDirection(0,2);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-				}
-			}
-
-
-			//reverse
-			if(direction == -1){
-				if(motorCpid.output > 0){
-					setDirection(0,1);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-				}else{
-					setDirection(1,1);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-				}
-				if(motorDpid.output > 0){
-					setDirection(0,2);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-				}else{
-					setDirection(1,2);
-					__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-				}
-			}
-
-			sprintf(OLED_row4, "pid C %d", motorCpid.output);
-			sprintf(OLED_row5, "pid D %d", motorDpid.output);
-
 			previousTick = currentTick;
 		}
 		//printToSerial(motorCvel, encoderCma.out, motorCpid.lastError, motorCpid.output, motorCpid.errorIntegral);
@@ -1047,87 +1047,80 @@ void encoder(void *argument)
 	int cnt1, cnt2, diffC;
 	int cnt3, cnt4, diffD;
 
+	uint32_t currentTick, previousTick=0;
+
 	int avgDist = 0;
 
 	cnt1 = 0;//__HAL_TIM_GET_COUNTER(&htim4);
 	cnt3 = 0;//__HAL_TIM_GET_COUNTER(&htim2);
 	for(;;){
 		if(!isMoving){
-			osDelay(100);
+			osDelay(50);
+			previousTick = HAL_GetTick();
 			continue;
 		}
-		diffC = 0;
-		diffD = 0;
-		//encoderC
-		cnt2 = __HAL_TIM_GET_COUNTER(&htim4);
-		if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim4))
-		{
-			if(cnt2 <= cnt1)
-				diffC = cnt1 - cnt2;
+		currentTick = HAL_GetTick();
+		if(currentTick - previousTick >= 100L){
+			diffC = 0;
+			diffD = 0;
+			//encoderC
+			cnt2 = __HAL_TIM_GET_COUNTER(&htim4);
+			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim4))
+			{
+				if(cnt2 <= cnt1)
+					diffC = cnt1 - cnt2;
+				else
+					diffC = (65535 - cnt2) + cnt1; //problem
+			}
 			else
-				diffC = (65535 - cnt2) + cnt1;
-		}
-		else
-		{
-			if(cnt2 >= cnt1)
-				diffC = cnt2 - cnt1;
+			{
+				if(cnt2 >= cnt1)
+					diffC = cnt2 - cnt1;
+				else
+					diffC = (65535 - cnt1) + cnt2;
+			}
+			cnt1 = cnt2;
+
+			//encoderD
+			cnt4 = __HAL_TIM_GET_COUNTER(&htim2);
+			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2))
+			{
+				if(cnt4 <= cnt3)
+					diffD = cnt3 - cnt4;
+				else
+					diffD = (65535 - cnt4) + cnt3;
+			}
 			else
-				diffC = (65535 - cnt1) + cnt2;
+			{
+				if(cnt4 >= cnt3)
+					diffD = cnt4 - cnt3;
+				else
+					diffD = (65535 - cnt3) + cnt4;
+			}
+			cnt3 = cnt4;
+
+			distC += abs(diffC)/fullRotationWheel*circumferenceWheel;
+			distD += abs(diffD)/fullRotationWheel*circumferenceWheel;
+
+			if(diffC!=0 && diffD !=0){ //when there is movement then we see if dist greater before stop car
+				avgDist = (distC+distD)/2;
+				if(avgDist >= goDist){
+					motorStop();
+					resetCar();
+					osDelay(50);
+				}
+			}
+
+			encoderC.velocity = abs(diffC);
+			encoderD.velocity = abs(diffD);
+
+			sprintf(OLED_row1, "dist %d", avgDist);
+			sprintf(OLED_row2, "spdC %d", encoderC.velocity);
+			sprintf(OLED_row3, "spdD %d", encoderD.velocity);
+			previousTick = currentTick;
+			osDelay(10);
 		}
-		cnt1 = cnt2;
-
-		//encoderD
-		cnt4 = __HAL_TIM_GET_COUNTER(&htim2);
-		if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2))
-		{
-			if(cnt4 <= cnt3)
-				diffD = cnt3 - cnt4;
-			else
-				diffD = (65535 - cnt4) + cnt3;
-
-		}
-		else
-		{
-			if(cnt4 >= cnt3)
-				diffD = cnt4 - cnt3;
-			else
-				diffD = (65535 - cnt3) + cnt4;
-		}
-		cnt3 = cnt4;
-
-		distC += abs(diffC)/fullRotationWheel*circumferenceWheel;
-		distD += abs(diffD)/fullRotationWheel*circumferenceWheel;
-
-		if(distC!=0 && distD !=0)
-			avgDist = (distC+distD)/2;
-//		if (distC >= goDist)
-//		{
-//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
-//			isMoving = 0;
-//		}
-//		if (distD >= goDist)
-//		{
-//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
-//			isMoving = 0;
-//		}
-
-		encoderC.velocity = abs(diffC);
-		encoderD.velocity = abs(diffD);
-
-		if(avgDist >= goDist){
-//			isMoving = 0;
-//			osDelay(100);
-//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
-//			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
-			motorStop();
-			resetCar();
-		}
-
-		sprintf(OLED_row1, "dist %d", avgDist);
-		sprintf(OLED_row2, "spdC %d", encoderC.velocity);
-		sprintf(OLED_row3, "spdD %d", encoderD.velocity);
-		//printVelocity(diffC, diffD);
-		osDelay(100);
+		osDelay(50);
 	}
   /* USER CODE END encoder */
 }
@@ -1184,6 +1177,7 @@ void StartGyroTask(void *argument)
   for(;;)
   {
 //	  if(!isMoving){
+//	  previousTick = HAL_GetTick();
 //		  osDelay(100);
 //		  continue;
 //	  }
@@ -1213,7 +1207,7 @@ void StartGyroTask(void *argument)
 		   sprintf(OLED_row0, "pwm %d", calPWM);
 		   previousTick = currentTick;
 	  }
-	  osDelay(1);
+	  osDelay(50);
   }
   /* USER CODE END StartGyroTask */
 }

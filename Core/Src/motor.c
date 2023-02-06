@@ -18,7 +18,7 @@ int16_t pwmMin = 600;
 extern double goDist;
 
 extern uint8_t isMoving;
-extern uint8_t direction;
+extern int8_t direction;
 
 void Motor_Init(){
 
