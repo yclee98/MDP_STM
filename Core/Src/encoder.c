@@ -32,4 +32,5 @@ void encoder_reset(encoder_instance *e){
 	e->velocity = 0;
 	e->distance = 0;
 	e->lastCounterValue = 0;
+	e->direction = 1;
 }

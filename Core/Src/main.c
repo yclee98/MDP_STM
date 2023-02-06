@@ -23,12 +23,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "motor.h"
-#include "gyro.h"
-#include "encoder.h"
-#include "pid.h"
-#include "moving_avg.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -135,7 +129,7 @@ uint8_t pidEnable = 0;
 
 //flag to indicate if car moving
 volatile uint8_t isMoving = 0;
-volatile int8_t direction = 0; // 1 for forward, -1 for reverse
+//volatile int8_t direction = 0; // 1 for forward, -1 for reverse
 
 //encoder moving average
 mov_aver_intance encoderCma, encoderDma;
@@ -719,7 +713,7 @@ void resetCar(){
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
 
-	totalAngle=0;
+	totalAngle=0.0;
 }
 
 
@@ -744,13 +738,13 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		forward(120);
+		forward(1, 120);
 		osDelay(10);
 		while(isMoving){
 			osDelay(100);
 		}
 		osDelay(4000);
-		backward(120);
+		forward(0,120);
 		osDelay(10);
 		while(isMoving){
 			osDelay(100);
@@ -858,13 +852,12 @@ void syncMotor(void *argument)
 				apply_pid(&motorCpid, encoderCma.out, currentTick-previousTick);
 				apply_pid(&motorDpid, encoderDma.out, currentTick-previousTick);
 
-				if(!isMoving){
+				if(!isMoving){ //need to double check it is moving before we set the speed
 					osDelay(10);
 					continue;
 				}
 
-				//forward
-				if(direction == 1){
+				if(encoderC.direction){ //forward
 					if(motorCpid.output > 0){
 						setDirection(1,1);
 						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
@@ -872,6 +865,17 @@ void syncMotor(void *argument)
 						setDirection(0,1);
 						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
 					}
+				}else{ //reverse
+					if(motorCpid.output > 0){
+						setDirection(0,1);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+					}else{
+						setDirection(1,1);
+						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+					}
+				}
+
+				if(encoderD.direction){ //forward
 					if(motorDpid.output > 0){
 						setDirection(1,2);
 						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
@@ -879,18 +883,7 @@ void syncMotor(void *argument)
 						setDirection(0,2);
 						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
 					}
-				}
-
-
-				//reverse
-				if(direction == -1){
-					if(motorCpid.output > 0){
-						setDirection(0,1);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-					}else{
-						setDirection(1,1);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-					}
+				}else{ //reverse
 					if(motorDpid.output > 0){
 						setDirection(0,2);
 						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
@@ -903,7 +896,7 @@ void syncMotor(void *argument)
 				sprintf(OLED_row4, "pid C %d", motorCpid.output);
 				sprintf(OLED_row5, "pid D %d", motorDpid.output);
 			}
-			previousTick = currentTick;
+			previousTick = HAL_GetTick();;
 		}
 		//printToSerial(motorCvel, encoderCma.out, motorCpid.lastError, motorCpid.output, motorCpid.errorIntegral);
 		osDelay(50);
@@ -1042,7 +1035,7 @@ void encoder(void *argument)
 
 	uint32_t currentTick, previousTick=0;
 
-	int avgDist = 0;
+//	int avgDist = 0;
 
 	cnt1 = 0;//__HAL_TIM_GET_COUNTER(&htim4);
 	cnt3 = 0;//__HAL_TIM_GET_COUNTER(&htim2);
@@ -1053,7 +1046,9 @@ void encoder(void *argument)
 			continue;
 		}
 		currentTick = HAL_GetTick();
-		if(currentTick - previousTick >= 100L){ //dont change, will affect the speed and pid
+		//need increase to have better accurate counter??
+		//reading the counter too frequent cause the cnt not being accurate??
+		if(currentTick - previousTick >= 500L){ //dont change, will affect the speed and pid 100L
 			diffC = 0;
 			diffD = 0;
 
@@ -1062,12 +1057,15 @@ void encoder(void *argument)
 			cnt4 = __HAL_TIM_GET_COUNTER(&htim2);
 
 			//encoderC
-			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim4))
+			if(cnt2==cnt1){
+				diffC=0;
+			}
+			else if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim4))
 			{
 				if(cnt2 <= cnt1)
 					diffC = cnt1 - cnt2;
 				else
-					diffC = (65535 - cnt2) + cnt1; //problem
+					diffC = (65535 - cnt2) + cnt1;
 			}
 			else
 			{
@@ -1078,7 +1076,10 @@ void encoder(void *argument)
 			}
 
 			//encoderD
-			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2))
+			if(cnt4==cnt3){
+				diffD = 0;
+			}
+			else if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2))
 			{
 				if(cnt4 <= cnt3)
 					diffD = cnt3 - cnt4;
@@ -1096,19 +1097,18 @@ void encoder(void *argument)
 			encoderC.distance += abs(diffC)/fullRotationWheel*circumferenceWheel;
 			encoderD.distance += abs(diffD)/fullRotationWheel*circumferenceWheel;
 
-			if(diffC!=0 && diffD !=0){ //when there is movement then we see if dist greater before stop car
-				avgDist = (encoderC.distance+encoderD.distance)/2;
-				if(avgDist >= goDist){
-					motorStop();
-					resetCar();
-					osDelay(50);
-				}
-			}
+//			if(diffC!=0 && diffD !=0){ //when there is movement then we see if dist greater before stop car
+//				avgDist = (encoderC.distance+encoderD.distance)/2;
+//				if(avgDist >= goDist){
+//					motorStop();
+//					resetCar();
+//					osDelay(50);
+//				}
+//			}
 
 			encoderC.velocity = abs(diffC);
 			encoderD.velocity = abs(diffD);
 
-			sprintf(OLED_row1, "dist %d", avgDist);
 			sprintf(OLED_row2, "spdC %d", encoderC.velocity);
 			sprintf(OLED_row3, "spdD %d", encoderD.velocity);
 
@@ -1197,7 +1197,7 @@ void StartGyroTask(void *argument)
 			   totalAngle = 0;
 
 		   if(isMoving){
-			   calPWM = (int)(147 + totalAngle*7);
+			   calPWM = (int)(SERVO_CENTER + totalAngle*7);
 				if(calPWM > 200)
 				   calPWM = 200;
 				if(calPWM < 100)
@@ -1206,7 +1206,7 @@ void StartGyroTask(void *argument)
 		   }
 
 		   sprintf(OLED_row0, "pwm %d", calPWM);
-		   previousTick = currentTick;
+		   previousTick = HAL_GetTick();
 	  }
 	  osDelay(50);
   }

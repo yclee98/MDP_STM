@@ -3,11 +3,13 @@
 #define PID_MAX  4000
 #define PID_MIN 700
 
-int16_t MOTOR_VELOCITY_REF = 500;
+//500 for 100milisec 4 0.8 0.2
 
-float kp = 4;
-float ki = 0.8;
-float kd = 0.2;
+int16_t MOTOR_VELOCITY_REF = 1000;
+
+float kp = 3;
+float ki = 0.5;
+float kd = 0.1;
 
 void setPID(float p, float i, float d){
 	kp = p;

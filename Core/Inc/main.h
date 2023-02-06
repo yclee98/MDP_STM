@@ -37,6 +37,11 @@ extern "C" {
 #include "stdint.h"
 #include "oled.h"
 #include "serialcomm.h"
+#include "motor.h"
+#include "gyro.h"
+#include "encoder.h"
+#include "pid.h"
+#include "moving_avg.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -60,6 +65,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void resetCar();
 
 /* USER CODE END EFP */
 
@@ -93,6 +99,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 #define ENCODER_C_HTIM htim4
 #define ENCODER_D_HTIM htim2
+
+#define SERVO_CENTER 147
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

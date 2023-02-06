@@ -8,6 +8,7 @@ typedef struct{
 	int16_t velocity;
 	uint16_t lastCounterValue;
 	double distance;
+	int direction;
 }encoder_instance;
 void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim);
 void encoder_reset(encoder_instance *e);

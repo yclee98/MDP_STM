@@ -17,7 +17,9 @@ int16_t pwmMin = 600;
 
 extern double goDist;
 extern uint8_t isMoving;
-extern int8_t direction;
+
+extern encoder_instance encoderC, encoderD;
+extern uint8_t OLED_row1[20];
 
 void Motor_Init(){
 
@@ -90,11 +92,11 @@ int16_t PID_Control(Motor *motor, int flipped){
 	} // if loop
 }
 
-//isForward 1,0
-//motor 1=c,2=d, 0=both
-void setDirection(bool isForward, int motor)
+//forward = 1, reverse = 0
+//c=1, d=2, both=0
+void setDirection(int dir, int motor)
 {
-	if (isForward){// move forward
+	if (dir){// move forward
 		if (motor == 1) // C
 		{
 			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_RESET); // set direction of rotation for wheel D- forward
@@ -112,9 +114,8 @@ void setDirection(bool isForward, int motor)
 			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- forward
 			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_RESET);
 		}
-
 	}
-	else { // reverse
+	else{ // reverse
 		if (motor == 1) // C
 		{
 			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- reverse
@@ -133,29 +134,55 @@ void setDirection(bool isForward, int motor)
 			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_SET);
 		}
 	}
+	encoderC.direction = dir;
+	encoderD.direction = dir;
 }
 
-void forward(double var)
+//1= forward, 0= reverse
+void forward(int dir, double dist)
 {
-	goDist = var;
-	htim1.Instance->CCR4 = 147;
-	osDelay(50);
-	setDirection(1, 0);
-	direction = 1;
+	osDelay(10);
+	goDist = dist;
+	htim1.Instance->CCR4 = SERVO_CENTER;
+	osDelay(100);
+	setDirection(dir, 0);
 	isMoving = 1;
 	osDelay(10);
+
+	int avgDist = 0;
+
+	while(avgDist < dist){
+		avgDist = (encoderC.distance+encoderD.distance)/2;
+		sprintf(OLED_row1, "dist %d", avgDist);
+		osDelay(10);
+	}
+
+	motorStop();
+	resetCar();
+	osDelay(50);
 }
 
-void backward(double var)
-{
-	goDist = var;
-	htim1.Instance->CCR4 = 147;
-	osDelay(50);
-	setDirection(0, 0);
-	direction = -1;
-	isMoving = 1;
-	osDelay(10);
-}
+//void backward(double var)
+//{
+//	goDist = var;
+//	htim1.Instance->CCR4 = SERVO_CENTER;
+//	osDelay(50);
+//	setDirection(0, 0);
+////	direction = -1;
+//	isMoving = 1;
+//	osDelay(10);
+//
+//	int avgDist = 0;
+//
+//	while(avgDist < var){
+//		avgDist = (encoderC.distance+encoderD.distance)/2;
+//		osDelay(100);
+//	}
+//
+//	motorStop();
+//	resetCar();
+//	osDelay(50);
+//}
 
 void motorStop(){
 	isMoving = 0;
@@ -163,7 +190,7 @@ void motorStop(){
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
 
-	htim1.Instance->CCR4 = 147;//return wheel straight
+	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
 	osDelay(50);
 }
 

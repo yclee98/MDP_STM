@@ -36,10 +36,10 @@ void ServoCenter();
 void stopMotor(Motor *motor);
 void resetMotor(Motor *motor);
 void setSpeed(uint16_t speed);
-void setDirection(bool isForward, int motor);
-void forward(double var);
+void setDirection(int dir, int motor);
+void forward(int dir, double dist);
 void motorStop();
-void backward(double var);
+//void backward(double var);
 void turnLeft();
 void turnRight();
 
