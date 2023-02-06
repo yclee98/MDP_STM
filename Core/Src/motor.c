@@ -141,22 +141,25 @@ void setDirection(int dir, int motor)
 //1= forward, 0= reverse
 void forward(int dir, double dist)
 {
+//	float dist_error = 0.94; //120 cm exceeded by 7cm
+//	dist = (int)(dist*dist_error);
+
 	osDelay(10);
 	goDist = dist;
 	htim1.Instance->CCR4 = SERVO_CENTER;
-	osDelay(100);
+	osDelay(1000);
 	setDirection(dir, 0);
 	isMoving = 1;
 	osDelay(10);
 
 	int avgDist = 0;
 
+	//while(encoderC.distance < dist && encoderD.distance < dist){
 	while(avgDist < dist){
 		avgDist = (encoderC.distance+encoderD.distance)/2;
 		sprintf(OLED_row1, "dist %d", avgDist);
 		osDelay(10);
 	}
-
 	motorStop();
 	resetCar();
 	osDelay(50);
@@ -189,7 +192,7 @@ void motorStop(){
 	osDelay(50);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
-
+	osDelay(100);
 	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
 	osDelay(50);
 }

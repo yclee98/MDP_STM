@@ -1,15 +1,15 @@
 #include "pid.h"
 
-#define PID_MAX  4000
-#define PID_MIN 700
+#define PID_MAX 4000
+#define PID_MIN 1100
 
 //500 for 100milisec 4 0.8 0.2
 
-int16_t MOTOR_VELOCITY_REF = 1000;
+int16_t MOTOR_VELOCITY_REF = 500;
 
-float kp = 3;
-float ki = 0.5;
-float kd = 0.1;
+float kp = 4;
+float ki = 0.8;
+float kd = 0.2;
 
 void setPID(float p, float i, float d){
 	kp = p;
@@ -28,8 +28,13 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity, uint32_t deltaTime){
 
 	if(m->output >= PID_MAX)
 		m->output = PID_MAX;
-	else if(m->output <= -PID_MAX)
+	//to ensure car wont go below min pid which can cause car to slow down alot
+	else if(m->output >= 0 && m->output < PID_MIN)
+		m->output = PID_MIN;
+	else if(m->output < -PID_MAX){ //if need to change direction
 		m->output = -PID_MAX;
+	}
+
 
 	m->lastError = inputError;
 }

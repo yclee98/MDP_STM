@@ -104,8 +104,8 @@ extern int16_t oldposD;
 int ival = 0;
 
 //distance calculation
-double fullRotationWheel = 1580;
-double circumferenceWheel = 21.3;
+double fullRotationWheel = 1580;//1580;
+double circumferenceWheel = 21.3; //21.3;
 //double distC = 0;
 //double distD = 0;
 double goDist = 0;
@@ -729,6 +729,7 @@ void resetCar(){
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
+	sprintf(OLED_row0, "start");
 	resetCar();
 	pidEnable = 1;
 	for (;;)
@@ -750,6 +751,13 @@ void StartDefaultTask(void *argument)
 			osDelay(100);
 		}
 		osDelay(4000);
+//		osDelay(7000);
+//		forward(1,80);
+//		osDelay(10);
+//		while(isMoving){
+//			osDelay(100);
+//		}
+		//osDelay(4000);
 	}
 //	sprintf(OLED_row0, "start task");
 //	target_angle = 0;
@@ -1048,7 +1056,7 @@ void encoder(void *argument)
 		currentTick = HAL_GetTick();
 		//need increase to have better accurate counter??
 		//reading the counter too frequent cause the cnt not being accurate??
-		if(currentTick - previousTick >= 500L){ //dont change, will affect the speed and pid 100L
+		if(currentTick - previousTick >= 100L){ //dont change, will affect the speed previous time`	 100L
 			diffC = 0;
 			diffD = 0;
 
@@ -1072,7 +1080,7 @@ void encoder(void *argument)
 				if(cnt2 >= cnt1)
 					diffC = cnt2 - cnt1;
 				else
-					diffC = (65535 - cnt1) + cnt2;
+					diffC = (65535 - cnt1) + cnt2; //problem
 			}
 
 			//encoderD
@@ -1094,23 +1102,27 @@ void encoder(void *argument)
 					diffD = (65535 - cnt3) + cnt4;
 			}
 
-			encoderC.distance += abs(diffC)/fullRotationWheel*circumferenceWheel;
-			encoderD.distance += abs(diffD)/fullRotationWheel*circumferenceWheel;
-
-//			if(diffC!=0 && diffD !=0){ //when there is movement then we see if dist greater before stop car
-//				avgDist = (encoderC.distance+encoderD.distance)/2;
-//				if(avgDist >= goDist){
-//					motorStop();
-//					resetCar();
-//					osDelay(50);
-//				}
-//			}
-
+			//not sure why but something diffC or diffD is a very large number
+			//it went to the overflow line 65535 - ...
+			//then when abs it it will return a negative which is probably overflow
+			//this abs return negative most probably because of int16_t for velocity which is short
+			//can manually change it to positive
 			encoderC.velocity = abs(diffC);
 			encoderD.velocity = abs(diffD);
 
+			//this a workaround
+			if(encoderC.velocity < 0)
+				encoderC.velocity = -encoderC.velocity;
+			if(encoderD.velocity < 0)
+				encoderD.velocity = -encoderD.velocity;
+
+			encoderC.distance += encoderC.velocity/fullRotationWheel*circumferenceWheel;
+			encoderD.distance += encoderD.velocity/fullRotationWheel*circumferenceWheel;
+
 			sprintf(OLED_row2, "spdC %d", encoderC.velocity);
 			sprintf(OLED_row3, "spdD %d", encoderD.velocity);
+
+			//printVelocity(encoderC.velocity, encoderD.velocity);
 
 			//get the counter before we start the 100milisec
 			cnt1 = __HAL_TIM_GET_COUNTER(&htim4);
