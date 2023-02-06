@@ -713,7 +713,7 @@ void resetCar(){
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
 
-	totalAngle=0.0;
+	//totalAngle=0.0;
 }
 
 
@@ -750,14 +750,7 @@ void StartDefaultTask(void *argument)
 		while(isMoving){
 			osDelay(100);
 		}
-		osDelay(4000);
-//		osDelay(7000);
-//		forward(1,80);
-//		osDelay(10);
-//		while(isMoving){
-//			osDelay(100);
-//		}
-		//osDelay(4000);
+		osDelay(5000);
 	}
 //	sprintf(OLED_row0, "start task");
 //	target_angle = 0;
@@ -881,6 +874,11 @@ void syncMotor(void *argument)
 						setDirection(1,1);
 						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
 					}
+				}
+
+				if(!isMoving){ //need to double check it is moving before we set the speed
+					osDelay(10);
+					continue;
 				}
 
 				if(encoderD.direction){ //forward
@@ -1103,10 +1101,12 @@ void encoder(void *argument)
 			}
 
 			//not sure why but something diffC or diffD is a very large number
+			//seem like the counter value became too close
 			//it went to the overflow line 65535 - ...
 			//then when abs it it will return a negative which is probably overflow
 			//this abs return negative most probably because of int16_t for velocity which is short
-			//can manually change it to positive
+			//diff is using int which is 32bit
+			//can manually change it to positive = workaround
 			encoderC.velocity = abs(diffC);
 			encoderD.velocity = abs(diffD);
 
@@ -1164,7 +1164,7 @@ void oledDisplayTask(void *argument)
 	}
   /* USER CODE END oledDisplayTask */
 }
-
+int liveVal = 0;
 /* USER CODE BEGIN Header_StartGyroTask */
 /**
  * @brief Function implementing the gyroTask thread.
@@ -1179,6 +1179,8 @@ void StartGyroTask(void *argument)
 		uint8_t val[2] = {0, 0};
 		uint32_t currentTick, previousTick=0;
 		double offset = 0;//7.848882995;
+		int servoMultiplier = 8;
+
 		int16_t angularSpeed = 0;
 		double measuredAngle = 0;
 		totalAngle = 0;
@@ -1196,29 +1198,33 @@ void StartGyroTask(void *argument)
 //	  }
 	  currentTick = HAL_GetTick(); //millisecond
 	  if(currentTick - previousTick >= 50L){
-		  readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
-		   angularSpeed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte; degree/second
+		readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
+		angularSpeed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte; degree/second
 
-		   measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
-		   totalAngle += measuredAngle;
-		  // printgyro(angularSpeed, angularSpeed);
+		//when it is not moving, it is hovering at around this range
+		if(angularSpeed >= -10 && angularSpeed <= 10)
+			measuredAngle = 0.0;
+		else
+			measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
 
-		   if(totalAngle > 720)
-			   totalAngle =0;
-		   if(totalAngle < -720)
-			   totalAngle = 0;
+		liveVal = angularSpeed;
+		totalAngle += measuredAngle;
+	   if(totalAngle >= 720)
+		   totalAngle =0;
+	   if(totalAngle <= -720)
+		   totalAngle = 0;
 
-		   if(isMoving){
-			   calPWM = (int)(SERVO_CENTER + totalAngle*7);
-				if(calPWM > 200)
-				   calPWM = 200;
-				if(calPWM < 100)
-				   calPWM = 100;
-			   htim1.Instance->CCR4 = calPWM;
-		   }
+		if(isMoving){
+		   calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
+			if(calPWM > 200)
+			   calPWM = 200;
+			if(calPWM < 100)
+			   calPWM = 100;
+		   htim1.Instance->CCR4 = calPWM;
+		}
 
-		   sprintf(OLED_row0, "pwm %d", calPWM);
-		   previousTick = HAL_GetTick();
+		sprintf(OLED_row0, "gy %d %d", calPWM, (long)totalAngle);
+	    previousTick = HAL_GetTick();
 	  }
 	  osDelay(50);
   }

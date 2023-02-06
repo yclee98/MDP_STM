@@ -194,7 +194,7 @@ void motorStop(){
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
 	osDelay(100);
 	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
-	osDelay(50);
+	osDelay(100);
 }
 
 void testMotorSpeed(){
