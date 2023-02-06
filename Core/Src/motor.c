@@ -143,25 +143,29 @@ void forward(int dir, double dist)
 {
 //	float dist_error = 0.94; //120 cm exceeded by 7cm
 //	dist = (int)(dist*dist_error);
-
+	__disable_irq();
+	resetCar();
 	osDelay(10);
 	goDist = dist;
 	htim1.Instance->CCR4 = SERVO_CENTER;
-	osDelay(1000);
+	osDelay(500);
 	setDirection(dir, 0);
+	osDelay(100);
 	isMoving = 1;
-	osDelay(10);
+	__enable_irq();
 
 	int avgDist = 0;
-
+	static int count=0;
 	//while(encoderC.distance < dist && encoderD.distance < dist){
 	while(avgDist < dist){
 		avgDist = (encoderC.distance+encoderD.distance)/2;
-		sprintf(OLED_row1, "dist %d", avgDist);
+		sprintf(OLED_row1, "dist %d %d", avgDist, count);
 		osDelay(10);
 	}
+	count++;
+
 	motorStop();
-	resetCar();
+
 	osDelay(50);
 }
 
@@ -188,21 +192,25 @@ void forward(int dir, double dist)
 //}
 
 void motorStop(){
+	__disable_irq();
 	isMoving = 0;
 	osDelay(50);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
 	osDelay(100);
 	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
+	__enable_irq();
 	osDelay(100);
 }
 
 void testMotorSpeed(){
+	isMoving = 1;
+		osDelay(50);
 	goDist = 200;
 	setDirection(1,0);
 	osDelay(50);
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 1500);
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 1500);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 2000);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 2000);
 	osDelay(50);
 }
 

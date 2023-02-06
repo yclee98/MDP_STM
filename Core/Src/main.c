@@ -45,6 +45,8 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim6;
+TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart3;
@@ -145,6 +147,8 @@ static void MX_TIM2_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM6_Init(void);
+static void MX_TIM7_Init(void);
 void StartDefaultTask(void *argument);
 void syncMotor(void *argument);
 void encoder(void *argument);
@@ -157,7 +161,7 @@ void StartGyroTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
+//void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 //	if (htim == &ENCODER_C_HTIM)
 //	{
 //		motorC.counter = __HAL_TIM_GET_COUNTER(htim);
@@ -172,7 +176,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 //		motorD.position = motorD.count/4;  //x1 Encoding
 //		motorD.angle = motorD.count/2; // x2 encoding
 //	}
-}
+//}
 /* USER CODE END 0 */
 
 /**
@@ -207,6 +211,8 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM8_Init();
   MX_I2C1_Init();
+  MX_TIM6_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 	OLED_Init();
 	SerialComm_Init();
@@ -218,10 +224,16 @@ int main(void)
 	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); //encoderC
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); //encoderD
 
+	//start timer for encoder and motor task
+	HAL_TIM_Base_Start_IT(&htim6);
+    HAL_TIM_Base_Start(&htim6);
+    HAL_TIM_Base_Start_IT(&htim7);
+    HAL_TIM_Base_Start(&htim7);
+
 	//start task
 	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-	syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
-	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
+//	syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
+//	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
 	oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
 	gyroTaskHandle = osThreadNew(StartGyroTask, NULL, &gyroTask_attributes);
   /* USER CODE END 2 */
@@ -516,6 +528,82 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 15;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 9999;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 15;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 9999;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
   * @brief TIM8 Initialization Function
   * @param None
   * @retval None
@@ -696,7 +784,71 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	//timer occurs every 10ms
+	if(htim==&htim7 && isMoving){
+		update_encoder(&encoderC, &htim4);
+		apply_average_filter(&encoderCma, encoderC.velocity);
+		apply_pid1(&motorCpid, encoderCma.out);
 
+		if(!isMoving){ //double check that is still moving before setting the pwm
+			osDelay(10);
+			return;
+		}
+
+		if(encoderC.direction){ //forward
+			if(motorCpid.output > 0){
+				setDirection(1,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+			}else{
+				setDirection(0,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+			}
+		}else{ //reverse
+			if(motorCpid.output > 0){
+				setDirection(0,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+			}else{
+				setDirection(1,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+			}
+		}
+		sprintf(OLED_row2, "velC %d", encoderC.velocity);
+		sprintf(OLED_row3, "pwmC %d", motorCpid.output);
+		//printVelocity(encoderC.velocity,encoderD.velocity);
+	}
+	if(htim==&htim6 && isMoving){
+		update_encoder(&encoderD, &htim2);
+		apply_average_filter(&encoderDma, encoderD.velocity);
+		apply_pid1(&motorDpid, encoderDma.out);
+
+		if(!isMoving){ //double check that is still moving before setting the pwm
+			osDelay(10);
+			return;
+		}
+
+		if(encoderD.direction){ //forward
+			if(motorDpid.output > 0){
+				setDirection(1,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+			}else{
+				setDirection(0,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+			}
+		}else{ //reverse
+			if(motorDpid.output > 0){
+				setDirection(0,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+			}else{
+				setDirection(1,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+			}
+		}
+		sprintf(OLED_row4, "velD %d", encoderD.velocity);
+		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
+	}
+
+}
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 	if(GPIO_Pin == User_Button_Pin && start == 0){
 		start = 1;
@@ -744,7 +896,7 @@ void StartDefaultTask(void *argument)
 		while(isMoving){
 			osDelay(100);
 		}
-		osDelay(4000);
+		osDelay(5000);
 		forward(0,120);
 		osDelay(10);
 		while(isMoving){
@@ -1164,7 +1316,7 @@ void oledDisplayTask(void *argument)
 	}
   /* USER CODE END oledDisplayTask */
 }
-int liveVal = 0;
+
 /* USER CODE BEGIN Header_StartGyroTask */
 /**
  * @brief Function implementing the gyroTask thread.
@@ -1207,7 +1359,7 @@ void StartGyroTask(void *argument)
 		else
 			measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
 
-		liveVal = angularSpeed;
+		//liveVal = angularSpeed;
 		totalAngle += measuredAngle;
 	   if(totalAngle >= 720)
 		   totalAngle =0;

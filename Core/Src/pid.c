@@ -1,20 +1,45 @@
 #include "pid.h"
 
-#define PID_MAX 4000
+#define PID_MAX 1500
 #define PID_MIN 1100
 
-//500 for 100milisec 4 0.8 0.2
+#define SAMPLING_RATE 10000
+#define INTEGRAL_GAIN_MAX  2000000
 
-int16_t MOTOR_VELOCITY_REF = 500;
+int16_t MOTOR_VELOCITY_REF = 40;
 
-float kp = 4;
-float ki = 0.8;
-float kd = 0.2;
+
+float kp = 40;
+float ki = 300;
+float kd = 0;
 
 void setPID(float p, float i, float d){
 	kp = p;
 	ki = i;
 	kd = d;
+}
+
+void apply_pid1(pid_instance *m, int16_t measuredVelocity){
+	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
+	m->errorIntegral += inputError;
+
+	if(m->errorIntegral > INTEGRAL_GAIN_MAX)
+		m->errorIntegral = INTEGRAL_GAIN_MAX;
+	else if(m->errorIntegral < -INTEGRAL_GAIN_MAX)
+		m->errorIntegral = -INTEGRAL_GAIN_MAX;
+
+	m->output =
+			kp * inputError +
+			ki * (m->errorIntegral)/SAMPLING_RATE +
+			kd * (inputError-m->lastError)* SAMPLING_RATE;
+
+	if(m->output >= PID_MAX)
+		m->output = PID_MAX;
+	else if(m->output <= -PID_MAX)
+		m->output = -PID_MAX;
+
+	m->lastError = inputError;
+	osDelay(50);
 }
 
 void apply_pid(pid_instance *m, int16_t measuredVelocity, uint32_t deltaTime){

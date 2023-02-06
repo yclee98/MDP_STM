@@ -1,36 +1,48 @@
 #include "encoder.h"
 
+extern double fullRotationWheel;
+extern double circumferenceWheel;
+
 void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
-	uint32_t tempCounter = __HAL_TIM_GET_COUNTER(htim);
-	static uint8_t firstTime = 0;
-	if(firstTime == 0){
-		e -> velocity = 0;
-		firstTime = 1;
+	int cnt1, cnt2, diffC;
+	cnt2 = __HAL_TIM_GET_COUNTER(htim);
+	cnt1 = e->lastCounterValue;
+
+	if(cnt2==cnt1){
+		diffC=0;
 	}
-	else{
-		if(tempCounter == e->lastCounterValue)
-			e->velocity = 0;
-		else if(tempCounter > e->lastCounterValue){
-			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(htim))
-				e->velocity = -(e->lastCounterValue) - (__HAL_TIM_GET_AUTORELOAD(htim)-tempCounter);
-			else
-				e->velocity = tempCounter - e->lastCounterValue;
-		}
-		else{
-			if(__HAL_TIM_IS_TIM_COUNTING_DOWN(htim))
-				e->velocity = tempCounter - e->lastCounterValue;
-			else
-				e->velocity = tempCounter + (__HAL_TIM_GET_AUTORELOAD(htim)-e->lastCounterValue);
-		}
+	else if(__HAL_TIM_IS_TIM_COUNTING_DOWN(htim))
+	{
+		if(cnt2 <= cnt1)
+			diffC = cnt1 - cnt2;
+		else
+			diffC = (65535 - cnt2) + cnt1;
 	}
-//	e->position += e->velocity;
-	e->lastCounterValue = tempCounter;
-	//osDelay(50);
+	else
+	{
+		if(cnt2 >= cnt1)
+			diffC = cnt2 - cnt1;
+		else
+			diffC = (65535 - cnt1) + cnt2; //problem
+	}
+
+	e->velocity = abs(diffC);
+	if(e->velocity < 0)
+		e->velocity = -e->velocity;
+
+	e->distance += e->velocity/fullRotationWheel*circumferenceWheel;
+
+	e->lastCounterValue = cnt2;
+	osDelay(50);
 }
 
 void encoder_reset(encoder_instance *e){
+	static int firstTime = 0;
+	if(!firstTime){
+		e->lastCounterValue = 0;
+		firstTime =1;
+	}
 	e->velocity = 0;
-	e->distance = 0;
-	e->lastCounterValue = 0;
+	e->distance = 0.0;
 	e->direction = 1;
 }
