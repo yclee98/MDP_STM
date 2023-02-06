@@ -23,13 +23,13 @@ void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
 				e->velocity = tempCounter + (__HAL_TIM_GET_AUTORELOAD(htim)-e->lastCounterValue);
 		}
 	}
-	e->position += e->velocity;
+//	e->position += e->velocity;
 	e->lastCounterValue = tempCounter;
 	//osDelay(50);
 }
 
 void encoder_reset(encoder_instance *e){
 	e->velocity = 0;
-	e->position = 0;
+	e->distance = 0;
 	e->lastCounterValue = 0;
 }

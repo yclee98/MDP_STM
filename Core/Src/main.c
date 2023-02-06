@@ -112,8 +112,8 @@ int ival = 0;
 //distance calculation
 double fullRotationWheel = 1580;
 double circumferenceWheel = 21.3;
-double distC = 0;
-double distD = 0;
+//double distC = 0;
+//double distD = 0;
 double goDist = 0;
 
 uint16_t encoderCountC = 0;
@@ -216,8 +216,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	OLED_Init();
 	SerialComm_Init();
-	//Motor_Init();
 
+	//start timer
+	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3); //motorC
+	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4); //motorD
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4); //servo motor
+	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); //encoderC
+	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); //encoderD
+
+	//start task
 	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 	syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
 	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
@@ -712,8 +719,8 @@ void resetCar(){
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
 
-	distC=0;
-	distD=0;
+//	distC=0;
+//	distD=0;
 
 	totalAngle=0;
 }
@@ -731,6 +738,7 @@ void resetCar(){
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
+	resetCar();
 	pidEnable = 1;
 	for (;;)
 	{
@@ -823,11 +831,6 @@ void StartDefaultTask(void *argument)
 void syncMotor(void *argument)
 {
   /* USER CODE BEGIN syncMotor */
-	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_3); //motorC
-	HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4); //motorD
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4); //servo motor
-
-	resetCar();
 
 	int motorCvel, motorDvel;
 	uint32_t currentTick, previousTick=0;
@@ -1038,11 +1041,6 @@ void encoder(void *argument)
 {
   /* USER CODE BEGIN encoder */
 	/* Infinite loop */
-	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); //encoderC
-	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); //encoderD
-
-	encoder_reset(&encoderC);
-	encoder_reset(&encoderD);
 
 	int cnt1, cnt2, diffC;
 	int cnt3, cnt4, diffD;
@@ -1060,7 +1058,7 @@ void encoder(void *argument)
 			continue;
 		}
 		currentTick = HAL_GetTick();
-		if(currentTick - previousTick >= 100L){
+		if(currentTick - previousTick >= 100L){ //dont change, will affect the speed and pid
 			diffC = 0;
 			diffD = 0;
 			//encoderC
@@ -1099,11 +1097,13 @@ void encoder(void *argument)
 			}
 			cnt3 = cnt4;
 
-			distC += abs(diffC)/fullRotationWheel*circumferenceWheel;
-			distD += abs(diffD)/fullRotationWheel*circumferenceWheel;
+//			distC += abs(diffC)/fullRotationWheel*circumferenceWheel;
+//			distD += abs(diffD)/fullRotationWheel*circumferenceWheel;
+			encoderC.distance += abs(diffC)/fullRotationWheel*circumferenceWheel;
+			encoderD.distance += abs(diffD)/fullRotationWheel*circumferenceWheel;
 
 			if(diffC!=0 && diffD !=0){ //when there is movement then we see if dist greater before stop car
-				avgDist = (distC+distD)/2;
+				avgDist = (encoderC.distance+encoderD.distance)/2;
 				if(avgDist >= goDist){
 					motorStop();
 					resetCar();
@@ -1118,9 +1118,8 @@ void encoder(void *argument)
 			sprintf(OLED_row2, "spdC %d", encoderC.velocity);
 			sprintf(OLED_row3, "spdD %d", encoderD.velocity);
 			previousTick = currentTick;
-			osDelay(10);
 		}
-		osDelay(50);
+		osDelay(10);
 	}
   /* USER CODE END encoder */
 }

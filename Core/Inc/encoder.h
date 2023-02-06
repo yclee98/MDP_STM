@@ -6,8 +6,8 @@
 
 typedef struct{
 	int16_t velocity;
-	int64_t position; //the integral of velocity
 	uint16_t lastCounterValue;
+	double distance;
 }encoder_instance;
 void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim);
 void encoder_reset(encoder_instance *e);
