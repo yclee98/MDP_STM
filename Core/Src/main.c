@@ -110,7 +110,7 @@ double fullRotationWheel = 1580;//1580;
 double circumferenceWheel = 21.3; //21.3;
 //double distC = 0;
 //double distD = 0;
-double goDist = 0;
+//double goDist = 0;
 
 uint16_t encoderCountC = 0;
 uint16_t encoderCountD = 0;
@@ -131,10 +131,12 @@ uint8_t pidEnable = 0;
 
 //flag to indicate if car moving
 volatile uint8_t isMoving = 0;
-//volatile int8_t direction = 0; // 1 for forward, -1 for reverse
 
 //encoder moving average
 mov_aver_intance encoderCma, encoderDma;
+
+//
+uint16_t SERVO_CENTER = 149;
 
 /* USER CODE END PV */
 
@@ -786,8 +788,13 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	//timer occurs every 10ms
-	if(htim==&htim7 && isMoving){
+	if(htim==&htim7 && isMoving ){
 		update_encoder(&encoderC, &htim4);
+
+		if(!pidEnable){ //dont do pid if not enable
+			osDelay(10);
+			return;
+		}
 		apply_average_filter(&encoderCma, encoderC.velocity);
 		apply_pid1(&motorCpid, encoderCma.out);
 
@@ -814,11 +821,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 			}
 		}
 		sprintf(OLED_row2, "velC %d", encoderC.velocity);
-		sprintf(OLED_row3, "pwmC %d", motorCpid.output);
-		//printVelocity(encoderC.velocity,encoderD.velocity);
+		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
+//		printVelocity(encoderC.velocity,encoderD.velocity);
 	}
-	if(htim==&htim6 && isMoving){
+	if(htim==&htim6 && isMoving && pidEnable){
 		update_encoder(&encoderD, &htim2);
+
+		if(!pidEnable){ //dont do pid if not enable
+			osDelay(10);
+			return;
+		}
+
 		apply_average_filter(&encoderDma, encoderD.velocity);
 		apply_pid1(&motorDpid, encoderDma.out);
 
@@ -844,7 +857,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
 			}
 		}
-		sprintf(OLED_row4, "velD %d", encoderD.velocity);
+		sprintf(OLED_row3, "velD %d", encoderD.velocity);
 		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
 	}
 
@@ -884,6 +897,7 @@ void StartDefaultTask(void *argument)
 	sprintf(OLED_row0, "start");
 	resetCar();
 	pidEnable = 1;
+
 	for (;;)
 	{
 		if (start == 0)
@@ -892,17 +906,11 @@ void StartDefaultTask(void *argument)
 			continue;
 		}
 		forward(1, 120);
-		osDelay(10);
-		while(isMoving){
-			osDelay(100);
-		}
 		osDelay(5000);
+
 		forward(0,120);
-		osDelay(10);
-		while(isMoving){
-			osDelay(100);
-		}
 		osDelay(5000);
+//		testMotorSpeed();
 	}
 //	sprintf(OLED_row0, "start task");
 //	target_angle = 0;
@@ -1331,54 +1339,37 @@ void StartGyroTask(void *argument)
 		uint8_t val[2] = {0, 0};
 		uint32_t currentTick, previousTick=0;
 		double offset = 0;//7.848882995;
-		int servoMultiplier = 8;
 
 		int16_t angularSpeed = 0;
 		double measuredAngle = 0;
 		totalAngle = 0;
-		int calPWM = 0;
 
 		previousTick = HAL_GetTick();
 
   /* Infinite loop */
   for(;;)
   {
-//	  if(!isMoving){
-//	  previousTick = HAL_GetTick();
-//		  osDelay(100);
-//		  continue;
-//	  }
 	  currentTick = HAL_GetTick(); //millisecond
 	  if(currentTick - previousTick >= 50L){
 		readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
 		angularSpeed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte; degree/second
 
 		//when it is not moving, it is hovering at around this range
-		if(angularSpeed >= -10 && angularSpeed <= 10)
+		if(angularSpeed >= -4 && angularSpeed <= 4)
 			measuredAngle = 0.0;
 		else
 			measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
 
-		//liveVal = angularSpeed;
 		totalAngle += measuredAngle;
 	   if(totalAngle >= 720)
 		   totalAngle =0;
 	   if(totalAngle <= -720)
 		   totalAngle = 0;
 
-		if(isMoving){
-		   calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
-			if(calPWM > 200)
-			   calPWM = 200;
-			if(calPWM < 100)
-			   calPWM = 100;
-		   htim1.Instance->CCR4 = calPWM;
-		}
-
-		sprintf(OLED_row0, "gy %d %d", calPWM, (long)totalAngle);
+		sprintf(OLED_row0, "gy %d", (long)totalAngle);
 	    previousTick = HAL_GetTick();
 	  }
-	  osDelay(50);
+	  osDelay(10);
   }
   /* USER CODE END StartGyroTask */
 }

@@ -3,12 +3,6 @@
 #define INC_MOTOR_H_
 
 #include "main.h"
-
-/*
- * center = 150
- * extreme right = 250
- * extreme left = 85
- */
 struct motor
 {
 	//Motor
@@ -39,7 +33,6 @@ void setSpeed(uint16_t speed);
 void setDirection(int dir, int motor);
 void forward(int dir, double dist);
 void motorStop();
-//void backward(double var);
 void turnLeft();
 void turnRight();
 

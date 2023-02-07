@@ -5,7 +5,7 @@ extern UART_HandleTypeDef huart3;
 extern uint8_t OLED_row0[20];
 
 #define TxBUFFSIZE 35
-#define RxBUFFSIZE 6
+#define RxBUFFSIZE 8
 
 uint8_t aTxBuffer[TxBUFFSIZE];
 uint8_t aRxBuffer[RxBUFFSIZE];
@@ -25,24 +25,24 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	//for receiving pid from serial
 	int8_t counter =0;
-	float kp = 0.0;
+	float kp = 0;
 	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
 	{
 		kp= *(aRxBuffer + counter) - 48 + kp * 10;
 		counter++;
 	}
 	counter++;
-	float ki = 0.0;
+	float ki = 0;
 	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
 	{
-		ki= (*(aRxBuffer + counter) - 48) / 10.0;
+		ki= *(aRxBuffer + counter) - 48 + ki * 10;
 		counter++;
 	}
 	counter++;
-	float kd = 0.0;
+	float kd = 0;
 	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
 	{
-		kd= (*(aRxBuffer + counter) - 48) / 10.0;
+		kd= (*(aRxBuffer + counter) - 48)/10.0 + kd / 10.0;
 		counter++;
 	}
 	sprintf(OLED_row0, "rec %d %d %d", (int)kp, (int)ki, (int)kd);

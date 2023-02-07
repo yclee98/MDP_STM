@@ -1,16 +1,16 @@
 #include "pid.h"
 
-#define PID_MAX 1500
+#define PID_MAX 4000
 #define PID_MIN 1100
 
 #define SAMPLING_RATE 10000
 #define INTEGRAL_GAIN_MAX  2000000
 
-int16_t MOTOR_VELOCITY_REF = 40;
+int16_t MOTOR_VELOCITY_REF = 50; //speed maintain at around half of this
 
 
-float kp = 40;
-float ki = 300;
+float kp = 60;
+float ki = 500;
 float kd = 0;
 
 void setPID(float p, float i, float d){

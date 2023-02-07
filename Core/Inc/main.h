@@ -100,7 +100,6 @@ void resetCar();
 #define ENCODER_C_HTIM htim4
 #define ENCODER_D_HTIM htim2
 
-#define SERVO_CENTER 147
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

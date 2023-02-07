@@ -16,7 +16,7 @@ void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
 		if(cnt2 <= cnt1)
 			diffC = cnt1 - cnt2;
 		else
-			diffC = (65535 - cnt2) + cnt1;
+			diffC = (65535 - cnt2) + cnt1; //problem
 	}
 	else
 	{
@@ -26,6 +26,13 @@ void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
 			diffC = (65535 - cnt1) + cnt2; //problem
 	}
 
+	//not sure why but something diffC very large number
+	//seem like the counter value became too close
+	//it went to the overflow line 65535 - ...
+	//then when abs it it will return a negative which is probably overflow
+	//this abs return negative most probably because of int16_t for velocity which is short
+	//diff is using int which is 32bit
+	//can manually change it to positive = workaround
 	e->velocity = abs(diffC);
 	if(e->velocity < 0)
 		e->velocity = -e->velocity;

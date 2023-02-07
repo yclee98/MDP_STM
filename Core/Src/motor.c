@@ -15,8 +15,11 @@ int16_t rpm = 0;         // speed in rpm number of count/sec * 60 sec  divide by
 int16_t pwmMax = 5000; // Maximum PWM value = 7200 keep the maximum value too 7000
 int16_t pwmMin = 600;
 
-extern double goDist;
+//extern double goDist;
 extern uint8_t isMoving;
+extern uint16_t SERVO_CENTER;
+extern double totalAngle;
+extern uint8_t pidEnable;
 
 extern encoder_instance encoderC, encoderD;
 extern uint8_t OLED_row1[20];
@@ -141,12 +144,9 @@ void setDirection(int dir, int motor)
 //1= forward, 0= reverse
 void forward(int dir, double dist)
 {
-//	float dist_error = 0.94; //120 cm exceeded by 7cm
-//	dist = (int)(dist*dist_error);
 	__disable_irq();
 	resetCar();
 	osDelay(10);
-	goDist = dist;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	osDelay(500);
 	setDirection(dir, 0);
@@ -154,42 +154,36 @@ void forward(int dir, double dist)
 	isMoving = 1;
 	__enable_irq();
 
+
+	if(pidEnable == 0){
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 2000);
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 2000);
+	}
+
+	int servoMultiplier = 3;
+	int calPWM = 0;
 	int avgDist = 0;
-	static int count=0;
-	//while(encoderC.distance < dist && encoderD.distance < dist){
+
 	while(avgDist < dist){
 		avgDist = (encoderC.distance+encoderD.distance)/2;
-		sprintf(OLED_row1, "dist %d %d", avgDist, count);
-		osDelay(10);
+
+		//servo control
+		calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
+		if(calPWM > 200)
+		   calPWM = 200;
+		if(calPWM < 100)
+		   calPWM = 100;
+	   htim1.Instance->CCR4 = calPWM;
+
+	   sprintf(OLED_row1, "dist %d %d", avgDist, calPWM);
+
+	   osDelay(10);
 	}
-	count++;
 
 	motorStop();
 
 	osDelay(50);
 }
-
-//void backward(double var)
-//{
-//	goDist = var;
-//	htim1.Instance->CCR4 = SERVO_CENTER;
-//	osDelay(50);
-//	setDirection(0, 0);
-////	direction = -1;
-//	isMoving = 1;
-//	osDelay(10);
-//
-//	int avgDist = 0;
-//
-//	while(avgDist < var){
-//		avgDist = (encoderC.distance+encoderD.distance)/2;
-//		osDelay(100);
-//	}
-//
-//	motorStop();
-//	resetCar();
-//	osDelay(50);
-//}
 
 void motorStop(){
 	__disable_irq();
@@ -206,7 +200,6 @@ void motorStop(){
 void testMotorSpeed(){
 	isMoving = 1;
 		osDelay(50);
-	goDist = 200;
 	setDirection(1,0);
 	osDelay(50);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 2000);
