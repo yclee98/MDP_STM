@@ -788,7 +788,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	//timer occurs every 10ms
-	if(htim==&htim7 && isMoving ){
+	if(htim==&htim7 && isMoving){
 		update_encoder(&encoderC, &htim4);
 
 		if(!pidEnable){ //dont do pid if not enable
@@ -824,7 +824,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
 //		printVelocity(encoderC.velocity,encoderD.velocity);
 	}
-	if(htim==&htim6 && isMoving && pidEnable){
+	if(htim==&htim6 && isMoving){
 		update_encoder(&encoderD, &htim2);
 
 		if(!pidEnable){ //dont do pid if not enable
@@ -895,7 +895,7 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	sprintf(OLED_row0, "start");
-	resetCar();
+//	resetCar();
 	pidEnable = 1;
 
 	for (;;)
