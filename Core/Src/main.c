@@ -877,8 +877,6 @@ void resetCar(){
 
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
-
-	//totalAngle=0.0;
 }
 
 
@@ -905,10 +903,10 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		forward(1, 120);
+		forward(1, 120*2);
 		osDelay(5000);
 
-		forward(0,120);
+		forward(0,120*2);
 		osDelay(5000);
 //		testMotorSpeed();
 	}

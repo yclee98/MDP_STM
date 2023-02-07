@@ -154,13 +154,12 @@ void forward(int dir, double dist)
 	isMoving = 1;
 	__enable_irq();
 
-
 	if(pidEnable == 0){
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 2000);
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 2000);
 	}
 
-	int servoMultiplier = 3;
+	int servoMultiplier = 6;
 	int calPWM = 0;
 	int avgDist = 0;
 
@@ -168,7 +167,12 @@ void forward(int dir, double dist)
 		avgDist = (encoderC.distance+encoderD.distance)/2;
 
 		//servo control
-		calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
+		if(dir == 1) //forward
+			calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
+		else if(dir == 0)//reverse
+			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
+		else
+			calPWM = SERVO_CENTER;
 		if(calPWM > 200)
 		   calPWM = 200;
 		if(calPWM < 100)
