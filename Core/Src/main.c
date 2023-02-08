@@ -48,6 +48,7 @@ TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim8;
+TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart3;
 
@@ -136,7 +137,13 @@ volatile uint8_t isMoving = 0;
 mov_aver_intance encoderCma, encoderDma;
 
 //
-uint16_t SERVO_CENTER = 149;
+uint16_t SERVO_CENTER = 148;
+
+int targetAngle = 0;
+int targetDistance = 0;
+
+int16_t MOTOR_VELOCITY_REF = 10; //10, speed maintain at around half of this
+int16_t servoMultiplier = 8;
 
 /* USER CODE END PV */
 
@@ -151,6 +158,7 @@ static void MX_TIM8_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_TIM7_Init(void);
+static void MX_TIM10_Init(void);
 void StartDefaultTask(void *argument);
 void syncMotor(void *argument);
 void encoder(void *argument);
@@ -215,6 +223,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM6_Init();
   MX_TIM7_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
 	OLED_Init();
 	SerialComm_Init();
@@ -226,11 +235,6 @@ int main(void)
 	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); //encoderC
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); //encoderD
 
-	//start timer for encoder and motor task
-	HAL_TIM_Base_Start_IT(&htim6);
-    HAL_TIM_Base_Start(&htim6);
-    HAL_TIM_Base_Start_IT(&htim7);
-    HAL_TIM_Base_Start(&htim7);
 
 	//start task
 	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
@@ -549,7 +553,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 15;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 9999;
+  htim6.Init.Period = 4999;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -587,7 +591,7 @@ static void MX_TIM7_Init(void)
   htim7.Instance = TIM7;
   htim7.Init.Prescaler = 15;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 9999;
+  htim7.Init.Period = 4999;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
@@ -681,6 +685,37 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 2 */
   HAL_TIM_MspPostInit(&htim8);
+
+}
+
+/**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 15;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 9999;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
 
 }
 
@@ -786,82 +821,95 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-	//timer occurs every 10ms
-	if(htim==&htim7 && isMoving){
-		update_encoder(&encoderC, &htim4);
-
-		if(!pidEnable){ //dont do pid if not enable
-			osDelay(10);
-			return;
-		}
-		apply_average_filter(&encoderCma, encoderC.velocity);
-		apply_pid1(&motorCpid, encoderCma.out);
-
-		if(!isMoving){ //double check that is still moving before setting the pwm
-			osDelay(10);
-			return;
-		}
-
-		if(encoderC.direction){ //forward
-			if(motorCpid.output > 0){
-				setDirection(1,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-			}else{
-				setDirection(0,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-			}
-		}else{ //reverse
-			if(motorCpid.output > 0){
-				setDirection(0,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-			}else{
-				setDirection(1,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-			}
-		}
-		sprintf(OLED_row2, "velC %d", encoderC.velocity);
-		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
-//		printVelocity(encoderC.velocity,encoderD.velocity);
-	}
-	if(htim==&htim6 && isMoving){
-		update_encoder(&encoderD, &htim2);
-
-		if(!pidEnable){ //dont do pid if not enable
-			osDelay(10);
-			return;
-		}
-
-		apply_average_filter(&encoderDma, encoderD.velocity);
-		apply_pid1(&motorDpid, encoderDma.out);
-
-		if(!isMoving){ //double check that is still moving before setting the pwm
-			osDelay(10);
-			return;
-		}
-
-		if(encoderD.direction){ //forward
-			if(motorDpid.output > 0){
-				setDirection(1,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-			}else{
-				setDirection(0,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-			}
-		}else{ //reverse
-			if(motorDpid.output > 0){
-				setDirection(0,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-			}else{
-				setDirection(1,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-			}
-		}
-		sprintf(OLED_row3, "velD %d", encoderD.velocity);
-		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
-	}
-
-}
+//void  HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+//	if(htim ==&htim10 && isMoving){
+//		if(totalAngle < targetAngle){
+//			motorStop();
+//			HAL_TIM_Base_Stop_IT(&htim10);
+//		}
+//	}
+//
+//	//timer occurs every 10ms
+//	if(htim==&htim7 && isMoving){
+//		update_encoder(&encoderC, &htim4);
+//		sprintf(OLED_row2, "velC %d", encoderC.velocity);
+//
+//		if(!pidEnable){ //dont do pid if not enable
+//			osDelay(10);
+//			return;
+//		}
+//		apply_average_filter(&encoderCma, encoderC.velocity);
+//		apply_pid1(&motorCpid, encoderCma.out);
+//
+//		if(!isMoving){ //double check that is still moving before setting the pwm
+//			osDelay(10);
+//			return;
+//		}
+//
+//		if(encoderC.direction){ //forward
+//
+//			if(motorCpid.output > 0){
+//				setDirection(1,1);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+//			}else{
+//				setDirection(0,1);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+//			}
+//		}else{ //reverse
+//			if(motorCpid.output > 0){
+//				setDirection(0,1);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+//			}else{
+//				setDirection(1,1);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+//			}
+//		}
+//
+//		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
+////		printVelocity(encoderC.velocity,encoderD.velocity);
+//
+//	}
+//	if(htim==&htim6 && isMoving){
+//		update_encoder(&encoderD, &htim2);
+//		sprintf(OLED_row3, "velD %d", encoderD.velocity);
+//
+//		if(!pidEnable){ //dont do pid if not enable
+//			osDelay(10);
+//			return;
+//		}
+//
+//		apply_average_filter(&encoderDma, encoderD.velocity);
+//		apply_pid1(&motorDpid, encoderDma.out);
+//
+//		if(!isMoving){ //double check that is still moving before setting the pwm
+//			osDelay(10);
+//			return;
+//		}
+//
+//		if(encoderD.direction){ //forward
+//			if(motorDpid.output > 0){
+//				setDirection(1,2);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+//			}else{
+//				setDirection(0,2);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+//			}
+//		}else{ //reverse
+//			if(motorDpid.output > 0){
+//				setDirection(0,2);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+//			}else{
+//				setDirection(1,2);
+//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+//			}
+//		}
+//
+//		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
+////		printVelocity(encoderC.velocity,encoderD.velocity);
+//	}
+//
+//
+//}
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 	if(GPIO_Pin == User_Button_Pin && start == 0){
 		start = 1;
@@ -877,6 +925,10 @@ void resetCar(){
 
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
+
+	targetAngle = 0;
+	targetDistance = 0;
+
 }
 
 
@@ -894,8 +946,14 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
 	sprintf(OLED_row0, "start");
 	resetCar();
-	encoder_reset_counter(&encoderC);
-	encoder_reset_counter(&encoderD);
+	encoder_reset_counter(&encoderC, &htim4);
+	encoder_reset_counter(&encoderD, &htim2);
+
+	//start timer for encoder and motor task
+//	HAL_TIM_Base_Start_IT(&htim6);
+////    HAL_TIM_Base_Start(&htim6);
+//    HAL_TIM_Base_Start_IT(&htim7);
+////    HAL_TIM_Base_Start(&htim7);
 
 	pidEnable = 1;
 
@@ -906,12 +964,18 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		forward(1, 120);
-		osDelay(5000);
+//		forward(1,90);
+//		osDelay(5000);
 
-		forward(0,120);
+
+		turnLeft(1,45);
 		osDelay(5000);
-//		testMotorSpeed();
+		forward(0, 18);
+		osDelay(5000);
+		turnRight(0,45);
+		osDelay(5000);
+		forward(1,18);
+		osDelay(10000);
 	}
 //	sprintf(OLED_row0, "start task");
 //	target_angle = 0;
@@ -1354,18 +1418,19 @@ void StartGyroTask(void *argument)
 	  if(currentTick - previousTick >= 50L){
 		readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
 		angularSpeed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte; degree/second
-
 		//when it is not moving, it is hovering at around this range
-		if(angularSpeed >= -4 && angularSpeed <= 4)
+		if(angularSpeed >= -10 && angularSpeed <= 10)
 			measuredAngle = 0.0;
 		else
 			measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
 
 		totalAngle += measuredAngle;
-	   if(totalAngle >= 720)
-		   totalAngle =0;
-	   if(totalAngle <= -720)
-		   totalAngle = 0;
+
+
+	   if(totalAngle >= 360)
+		   totalAngle -=360;
+	   if(totalAngle <= -360)
+		   totalAngle +=360;
 
 		sprintf(OLED_row0, "gy %d", (long)totalAngle);
 	    previousTick = HAL_GetTick();
@@ -1373,6 +1438,125 @@ void StartGyroTask(void *argument)
 	  osDelay(10);
   }
   /* USER CODE END StartGyroTask */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM11 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+	if(htim ==&htim10 && isMoving){
+		//turning
+		if(targetAngle != 0 && abs(totalAngle) >= targetAngle){
+			motorStop();
+			return;
+
+		}
+		else if(targetDistance != 0){
+			int avgDist = (encoderC.distance+encoderD.distance)/2;
+				if(avgDist >= targetDistance){
+					motorStop();
+				}
+				   sprintf(OLED_row1, "dist %d", avgDist);
+		}
+		return;
+	}
+
+	//timer occurs every 10ms
+	if(htim==&htim7 && isMoving){
+		update_encoder(&encoderC, &htim4);
+		sprintf(OLED_row2, "velC %d", encoderC.velocity);
+
+		if(!pidEnable){ //dont do pid if not enable
+			osDelay(10);
+			return;
+		}
+		apply_average_filter(&encoderCma, encoderC.velocity);
+		apply_pid1(&motorCpid, encoderCma.out);
+
+		if(!isMoving){ //double check that is still moving before setting the pwm
+			osDelay(10);
+			return;
+		}
+
+		if(encoderC.direction){ //forward
+
+			if(motorCpid.output > 0){
+				setDirection(1,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+			}else{
+				setDirection(0,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+			}
+		}else{ //reverse
+			if(motorCpid.output > 0){
+				setDirection(0,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+			}else{
+				setDirection(1,1);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+			}
+		}
+
+		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
+//		printVelocity(encoderC.velocity,encoderD.velocity);
+		return;
+
+	}
+	if(htim==&htim6 && isMoving){
+		update_encoder(&encoderD, &htim2);
+		sprintf(OLED_row3, "velD %d", encoderD.velocity);
+
+		if(!pidEnable){ //dont do pid if not enable
+			osDelay(10);
+			return;
+		}
+
+		apply_average_filter(&encoderDma, encoderD.velocity);
+		apply_pid1(&motorDpid, encoderDma.out);
+
+		if(!isMoving){ //double check that is still moving before setting the pwm
+			osDelay(10);
+			return;
+		}
+
+		if(encoderD.direction){ //forward
+			if(motorDpid.output > 0){
+				setDirection(1,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+			}else{
+				setDirection(0,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+			}
+		}else{ //reverse
+			if(motorDpid.output > 0){
+				setDirection(0,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+			}else{
+				setDirection(1,2);
+				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+			}
+		}
+
+		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
+//		printVelocity(encoderC.velocity,encoderD.velocity);
+		return;
+
+	}
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM11) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
 }
 
 /**

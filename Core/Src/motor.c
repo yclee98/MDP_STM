@@ -2,6 +2,10 @@
 
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim8;
+extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim6;
+extern TIM_HandleTypeDef htim10;
+
 extern int16_t oldposC;    // // see SysTick_Handler in stm32f4xx_it.c
 extern int16_t oldposD;    // // see SysTick_Handler in stm32f4xx_it.c
 
@@ -18,10 +22,12 @@ int16_t pwmMin = 600;
 //extern double goDist;
 extern uint8_t isMoving;
 extern uint16_t SERVO_CENTER;
+extern int16_t servoMultiplier;
 extern double totalAngle;
 extern uint8_t pidEnable;
-extern int16_t servoMultiplier;
 
+extern int targetAngle;
+extern int targetDistance;
 extern encoder_instance encoderC, encoderD;
 extern uint8_t OLED_row1[20];
 
@@ -143,66 +149,75 @@ void setDirection(int dir, int motor)
 }
 
 
-//1= forward, 0= reverse
-void forward(int dir, double dist)
-{
-	__disable_irq();
-	resetCar();
-	htim1.Instance->CCR4 = SERVO_CENTER;
-	setDirection(dir, 0);
-	osDelay(1000);
+void motorStart(){
+
 	isMoving = 1;
-	__enable_irq();
 
 	if(pidEnable == 0){
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 2000);
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 2000);
 	}
 
+	//stop calculation interrupt
+	HAL_TIM_Base_Start_IT(&htim10);
+
+	//for pid/encoder interrupt
+	HAL_TIM_Base_Start_IT(&htim6);
+	HAL_TIM_Base_Start_IT(&htim7);
+
+}
+
+void motorStop(){
+	resetCar();
+
+	HAL_TIM_Base_Stop_IT(&htim7);
+	HAL_TIM_Base_Stop_IT(&htim6);
+	HAL_TIM_Base_Stop_IT(&htim10);
+	isMoving = 0;
+
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
+	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
+	osDelay(50);
+}
+
+//1= forward, 0= reverse
+void forward(int dir, double dist)
+{
+	htim1.Instance->CCR4 = SERVO_CENTER;
+	setDirection(dir, 0);
+	setSpeed(15);
+	targetDistance = dist;
+	osDelay(1000);
+
+	if (dist != 0){
+		motorStart();
+	}
+
 	int calPWM = SERVO_CENTER;
-	int avgDist = 0;
 
-	while(avgDist < dist){
-		avgDist = (encoderC.distance+encoderD.distance)/2;
-
-		//servo control
-		if(dir == 1) //forward
+	//servo control
+	while(isMoving){
+		if(encoderC.direction == 1) //forward
 			calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
-		else if(dir == 0)//reverse
+		else if(encoderC.direction == 0)//reverse
 			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
 		else
 			calPWM = SERVO_CENTER;
 		if(calPWM > 200)
-		   calPWM = 200;
+			calPWM = 200;
 		if(calPWM < 100)
-		   calPWM = 100;
+			calPWM = 100;
 		htim1.Instance->CCR4 = calPWM;
-
-	   sprintf(OLED_row1, "dist %d s %d", avgDist, calPWM);
-
-	   osDelay(10);
+		osDelay(50);
 	}
-
-	motorStop();
-
 	osDelay(50);
 }
 
-void motorStop(){
-	__disable_irq();
-	isMoving = 0;
-	osDelay(50);
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
-	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
-	osDelay(1000);
-	__enable_irq();
-	osDelay(100);
-}
 
 void testMotorSpeed(){
 	isMoving = 1;
-		osDelay(50);
+	osDelay(50);
 	setDirection(1,0);
 	osDelay(50);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 2000);
@@ -210,16 +225,53 @@ void testMotorSpeed(){
 	osDelay(50);
 }
 
+int addAngle(int angle){
+	angle += totalAngle;
 
+	if(angle >= 360)
+		angle -=360;
+	if(angle <= -360)
+		angle +=360;
 
-void turnLeft()
-{
-	htim1.Instance->CCR4 = 85;
-	setDirection(1, 0);
+	return angle;
 }
 
-void turnRight()
+void turnLeft(int dir, int angle)
 {
-	htim1.Instance->CCR4 = 250;
-	setDirection(1, 0);
+//	angle = addAngle(angle);
+	setSpeed(5);
+	htim1.Instance->CCR4 = 114;
+	setDirection(dir, 0);
+	osDelay(100);
+	motorStart();
+	targetAngle = angle;
+
+	while(isMoving)
+		osDelay(100);
+
+	if (!dir)
+		totalAngle +=angle;
+	else
+		totalAngle -= angle;
+
+}
+
+void turnRight(int dir, int angle)
+{
+//	angle = addAngle(-angle);
+
+	setSpeed(5);
+	htim1.Instance->CCR4 = 190;
+	setDirection(dir, 0);
+	osDelay(100);
+	motorStart();
+	targetAngle = angle;
+
+	while(isMoving)
+		osDelay(100);
+
+	if (dir)
+		totalAngle +=angle;
+	else
+		totalAngle -= angle;
 }

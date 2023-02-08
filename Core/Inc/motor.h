@@ -29,12 +29,12 @@ void Motor_Init();
 void ServoCenter();
 void stopMotor(Motor *motor);
 void resetMotor(Motor *motor);
-void setSpeed(uint16_t speed);
 void setDirection(int dir, int motor);
 void forward(int dir, double dist);
 void motorStop();
-void turnLeft();
-void turnRight();
+void motorStart();
+void turnLeft(int dir,int angle);
+void turnRight(int dir,int angle);
 
 void testMotorSpeed();
 

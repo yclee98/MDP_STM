@@ -13,6 +13,6 @@ typedef struct{
 
 void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim);
 void encoder_reset(encoder_instance *e);
-void encoder_reset_counter(encoder_instance *e);
+void encoder_reset_counter(encoder_instance *e, TIM_HandleTypeDef *htim);
 
 #endif /* INC_ENCODER_H_ */

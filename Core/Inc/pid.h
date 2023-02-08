@@ -9,7 +9,7 @@ typedef struct{
 	int32_t errorIntegral;
 	int16_t output; //the pid calculated value to set on the motor
 }pid_instance;
-
+void setSpeed(int16_t speed);
 void setPID(float p, float i, float d);
 void apply_pid(pid_instance *m, int16_t measuredVelocity, uint32_t deltaTime);
 void apply_pid1(pid_instance *m, int16_t measuredVelocity);

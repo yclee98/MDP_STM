@@ -43,8 +43,8 @@ void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
 	osDelay(50);
 }
 
-void encoder_reset_counter(encoder_instance *e){
-	e->lastCounterValue = 0;
+void encoder_reset_counter(encoder_instance *e, TIM_HandleTypeDef *htim){
+	e->lastCounterValue = __HAL_TIM_GET_COUNTER(htim);;
 }
 
 void encoder_reset(encoder_instance *e){
