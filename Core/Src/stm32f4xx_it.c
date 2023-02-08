@@ -52,11 +52,7 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int16_t oldposC = 0;
-int16_t oldposD = 0;
-extern int16_t no_of_tick;
-extern Motor motorC;
-extern Motor motorD;
+
 int tick = 0; // in Tim3 Handler to calculate speed
 /* USER CODE END 0 */
 

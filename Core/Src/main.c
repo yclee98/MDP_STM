@@ -89,61 +89,24 @@ const osThreadAttr_t gyroTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 //
-//set to 1 once user button is pressed so that code will run
-volatile int start = 0;
 
-extern int16_t target_angle; // target angle of rotation,
-//extern int16_t Kp;
-//extern float Kd;
-//extern float Ki;
-extern int16_t rpm;         // speed in rpm number of count/sec * 60 sec  divide by 260 count per round
-extern int16_t pwmMax; // Maximum PWM value = 7200 keep the maximum value too 7000
-extern int16_t no_of_tick;
-extern int16_t oldposC;
-extern int16_t oldposD;
-
-//Motor motorC;
-//Motor motorD;
-int ival = 0;
-
-//distance calculation
-double fullRotationWheel = 1580;//1580;
-double circumferenceWheel = 21.3; //21.3;
-//double distC = 0;
-//double distD = 0;
-//double goDist = 0;
-
-uint16_t encoderCountC = 0;
-uint16_t encoderCountD = 0;
-uint16_t encoderCount = 0;
-
-//gyro
-volatile double totalAngle;
-
-//OLED row display
 uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OLED_row5[20];
 
-//encoder
-encoder_instance encoderC, encoderD;
-
-//motor pid
-pid_instance motorCpid, motorDpid;
-uint8_t pidEnable = 0;
-
-//flag to indicate if car moving
+volatile int start = 0;
 volatile uint8_t isMoving = 0;
-
-//encoder moving average
-mov_aver_intance encoderCma, encoderDma;
-
-//
+uint8_t pidEnable = 1;
 uint16_t SERVO_CENTER = 148;
-
+int16_t MOTOR_VELOCITY_REF = 10;
+int16_t servoMultiplier = 8;
+double fullRotationWheel = 1580;
+double circumferenceWheel = 21.3;
+volatile double totalAngle =0;
 int targetAngle = 0;
 int targetDistance = 0;
 
-int16_t MOTOR_VELOCITY_REF = 10; //10, speed maintain at around half of this
-int16_t servoMultiplier = 8;
+encoder_instance encoderC, encoderD;
+pid_instance motorCpid, motorDpid;
+mov_aver_intance encoderCma, encoderDma;
 
 /* USER CODE END PV */
 
@@ -171,22 +134,7 @@ void StartGyroTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
-//	if (htim == &ENCODER_C_HTIM)
-//	{
-//		motorC.counter = __HAL_TIM_GET_COUNTER(htim);
-//		motorC.count = (int16_t)motorC.counter;
-//		motorC.position = motorC.count/4;  //x1 Encoding
-//		motorC.angle = motorC.count/2; // x2 encoding
-//	}
-//	else if (htim == &ENCODER_D_HTIM)
-//	{
-//		motorD.counter = __HAL_TIM_GET_COUNTER(htim);
-//		motorD.count = (int16_t)motorD.counter;
-//		motorD.position = motorD.count/4;  //x1 Encoding
-//		motorD.angle = motorD.count/2; // x2 encoding
-//	}
-//}
+
 /* USER CODE END 0 */
 
 /**
@@ -821,95 +769,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//void  HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-//	if(htim ==&htim10 && isMoving){
-//		if(totalAngle < targetAngle){
-//			motorStop();
-//			HAL_TIM_Base_Stop_IT(&htim10);
-//		}
-//	}
-//
-//	//timer occurs every 10ms
-//	if(htim==&htim7 && isMoving){
-//		update_encoder(&encoderC, &htim4);
-//		sprintf(OLED_row2, "velC %d", encoderC.velocity);
-//
-//		if(!pidEnable){ //dont do pid if not enable
-//			osDelay(10);
-//			return;
-//		}
-//		apply_average_filter(&encoderCma, encoderC.velocity);
-//		apply_pid1(&motorCpid, encoderCma.out);
-//
-//		if(!isMoving){ //double check that is still moving before setting the pwm
-//			osDelay(10);
-//			return;
-//		}
-//
-//		if(encoderC.direction){ //forward
-//
-//			if(motorCpid.output > 0){
-//				setDirection(1,1);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-//			}else{
-//				setDirection(0,1);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-//			}
-//		}else{ //reverse
-//			if(motorCpid.output > 0){
-//				setDirection(0,1);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-//			}else{
-//				setDirection(1,1);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-//			}
-//		}
-//
-//		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
-////		printVelocity(encoderC.velocity,encoderD.velocity);
-//
-//	}
-//	if(htim==&htim6 && isMoving){
-//		update_encoder(&encoderD, &htim2);
-//		sprintf(OLED_row3, "velD %d", encoderD.velocity);
-//
-//		if(!pidEnable){ //dont do pid if not enable
-//			osDelay(10);
-//			return;
-//		}
-//
-//		apply_average_filter(&encoderDma, encoderD.velocity);
-//		apply_pid1(&motorDpid, encoderDma.out);
-//
-//		if(!isMoving){ //double check that is still moving before setting the pwm
-//			osDelay(10);
-//			return;
-//		}
-//
-//		if(encoderD.direction){ //forward
-//			if(motorDpid.output > 0){
-//				setDirection(1,2);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-//			}else{
-//				setDirection(0,2);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-//			}
-//		}else{ //reverse
-//			if(motorDpid.output > 0){
-//				setDirection(0,2);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-//			}else{
-//				setDirection(1,2);
-//				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-//			}
-//		}
-//
-//		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
-////		printVelocity(encoderC.velocity,encoderD.velocity);
-//	}
-//
-//
-//}
+
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 	if(GPIO_Pin == User_Button_Pin && start == 0){
 		start = 1;
@@ -928,7 +788,6 @@ void resetCar(){
 
 	targetAngle = 0;
 	targetDistance = 0;
-
 }
 
 
@@ -948,12 +807,6 @@ void StartDefaultTask(void *argument)
 	resetCar();
 	encoder_reset_counter(&encoderC, &htim4);
 	encoder_reset_counter(&encoderD, &htim2);
-
-	//start timer for encoder and motor task
-//	HAL_TIM_Base_Start_IT(&htim6);
-////    HAL_TIM_Base_Start(&htim6);
-//    HAL_TIM_Base_Start_IT(&htim7);
-////    HAL_TIM_Base_Start(&htim7);
 
 	pidEnable = 1;
 
@@ -977,63 +830,6 @@ void StartDefaultTask(void *argument)
 		forward(1,18);
 		osDelay(10000);
 	}
-//	sprintf(OLED_row0, "start task");
-//	target_angle = 0;
-//	Kp = 20;       // 10
-//	Ki = 0.001;   // 0.001
-//	Kd = 700;
-//
-//
-//	/* Infinite loop */
-//	for(;;)
-//	{
-//		if(start == 0){
-//			osDelay(1000);
-//			continue;
-//		}
-//
-//	  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
-//
-//	  //forward(150);
-////	  if (ival == 0)
-////	  {
-////
-////	  }
-////	  else if (ival == 1)
-////	  {
-////		  Kp = 20;
-////	  }
-////	  else if (ival == 2)
-////	  {
-////		  Kd = 500;
-////	  }
-////	  else if (ival == 3)
-////	  {
-////		  Kd = 1000;
-////	  }
-////	  else
-////	  {
-////		  start = 0;
-////	  }
-//
-//	  target_angle = 0;
-//	  while (target_angle < 1700)
-//	  {
-//		  target_angle += 360; // rotate 720 degree
-//		  motorC.start = 1;
-//		  motorD.start = 1;
-//		  while (motorC.start || motorD.start)
-//		  {
-//			  osDelay(50);
-//		  }
-//	  }
-//	  stopMotor(&motorC);
-//	  stopMotor(&motorD);
-//	  target_angle = 0;
-//	  ival += 1;
-//	  //Ki += 0.001;
-//	  //Kd -= 100;
-//	  //Kp += 5;
 
   /* USER CODE END 5 */
 }
@@ -1075,8 +871,8 @@ void syncMotor(void *argument)
 				apply_average_filter(&encoderCma, motorCvel);
 				apply_average_filter(&encoderDma, motorDvel);
 
-				apply_pid(&motorCpid, encoderCma.out, currentTick-previousTick);
-				apply_pid(&motorDpid, encoderDma.out, currentTick-previousTick);
+//				apply_pid(&motorCpid, encoderCma.out, currentTick-previousTick);
+//				apply_pid(&motorDpid, encoderDma.out, currentTick-previousTick);
 
 				if(!isMoving){ //need to double check it is moving before we set the speed
 					osDelay(10);
@@ -1132,120 +928,6 @@ void syncMotor(void *argument)
 		//printToSerial(motorCvel, encoderCma.out, motorCpid.lastError, motorCpid.output, motorCpid.errorIntegral);
 		osDelay(50);
 	}
-
-//	HAL_TIM_Encoder_Start_IT(&htim2, TIM_CHANNEL_ALL);
-//	HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
-//	rpm = (int)((1000/no_of_tick) * 60/260);  // For calculating motor rpm - by multiplying it with speed value
-//
-//	motorC.htim = &htim4;
-//	motorC.motor = 1;
-//	motorC.angle = 0;
-//	motorC.error = target_angle - motorC.angle;
-//	motorC.error_old = 0;
-//	motorC.error_area = 0;
-//	motorD.htim = &htim2;
-//	motorD.motor = 2;
-//	motorD.angle = 0;
-//	motorD.error = target_angle - motorD.angle;
-//	motorD.error_old = 0;
-//	motorD.error_area = 0;
-//
-//
-//
-////	Kp = 10;       // 10
-////	Ki = 0.001;   // 0.001
-////	Kd = 0;
-//
-//	motorC.millisOld = HAL_GetTick(); // get time value before starting - for PID
-//	motorD.millisOld = HAL_GetTick(); // get time value before starting - for PID
-//
-//	int16_t pwmValC = 0;
-//	int16_t pwmValD = 0;
-//
-//	//htim1.Instance->CCR4 = 100;
-//	//osDelay(500);
-//	//htim1.Instance->CCR4 = 147;
-//
-//	/* Infinite loop */
-//	for(;;)
-//	{
-//		if (start==0)
-//		{
-//			motorC.pwmVal = 0;
-//			motorD.pwmVal = 0;
-//			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_3,motorC.pwmVal);
-//			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_4,motorD.pwmVal);
-//
-//			motorC.err = 0;// for checking whether error has settle down near to zero
-//			motorC.angle = 0;
-//			motorC.start = 1;
-//
-//			motorD.err = 0;// for checking whether error has settle down near to zero
-//			motorD.angle = 0;
-//			motorD.start = 1;
-//		}
-//
-//		while (start==0){ //wait for the User PB to be pressed
-//			osDelay(500);
-//			motorD.millisOld = HAL_GetTick(); // get time value before starting - for PID
-//			motorC.millisOld = HAL_GetTick(); // get time value before starting - for PID
-//		}
-//
-//		while(!motorD.start && !motorC.start)
-//		{
-//			osDelay(500);
-//			motorD.millisOld = HAL_GetTick(); // get time value before starting - for PID
-//			motorC.millisOld = HAL_GetTick(); // get time value before starting - for PID
-//		}
-//
-//		if (target_angle >= 1800)
-//			target_angle = 1800;
-//		pwmValC = 0;
-//		pwmValD = 0;
-//		//target_angle = 2000;
-//
-//		if (motorD.start)
-//		{
-//			pwmValD = PID_Control(&motorD, 0); // call the PID control loop calculation
-//		}
-//		if (motorC.start)
-//		{
-//			pwmValC = PID_Control(&motorC, 1); // call the PID control loop calculation
-//		}
-//		motorC.pwmVal = pwmValC;          // overwrite PID control above, minimum pwmVal = 1000?
-//		motorD.pwmVal = pwmValD;          // overwrite PID control above, minimum pwmVal = 1000?
-//		__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_3,motorC.pwmVal); // output PWM waveform to drive motor
-//		__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_4,motorD.pwmVal); // output PWM waveform to drive motor
-//
-//		if (abs(motorC.error) < 3){ // error is less than 3 deg
-//			motorC.err++; // to keep track how long it has reached steady state
-//			motorC.angle = -(int)(motorC.position*360/260);  //calculate the angle
-//			motorC.error = target_angle - motorC.angle; // calculate the error
-//		}
-//		if (abs(motorD.error) < 3){ // error is less than 3 deg
-//			motorD.err++; // to keep track how long it has reached steady state
-//			motorD.angle = (int)(motorD.position*360/260);  //calculate the angle
-//			motorD.error = target_angle - motorD.angle; // calculate the error
-//		}
-//
-//		if (motorC.err > 1 && motorC.start) { // error has settled to within the acceptance ranges
-//			resetMotor(&motorC);
-//			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_3,motorC.pwmVal);
-//		}
-//		if (motorD.err > 1 && motorD.start) {
-//			resetMotor(&motorD);
-//			__HAL_TIM_SetCompare(&htim8,TIM_CHANNEL_4,motorD.pwmVal);
-//		}
-//		while (!motorC.start && !motorD.start)
-//		{
-//			//continue to send the data values for display
-//			//start = 0;  // wait for PB to restart
-//			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10); //Buzzer On
-//			osDelay(500);
-//			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10); //Buzzer Off
-//		}
-//		osDelay(50);
-//	}
   /* USER CODE END syncMotor */
 }
 
@@ -1456,19 +1138,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if(targetAngle != 0 && abs(totalAngle) >= targetAngle){
 			motorStop();
 			return;
-
 		}
+		//moving straight/reverse
 		else if(targetDistance != 0){
 			int avgDist = (encoderC.distance+encoderD.distance)/2;
-				if(avgDist >= targetDistance){
-					motorStop();
-				}
-				   sprintf(OLED_row1, "dist %d", avgDist);
+			if(avgDist >= targetDistance){
+				motorStop();
+			}
+			sprintf(OLED_row1, "dist %d", avgDist);
 		}
 		return;
 	}
 
-	//timer occurs every 10ms
 	if(htim==&htim7 && isMoving){
 		update_encoder(&encoderC, &htim4);
 		sprintf(OLED_row2, "velC %d", encoderC.velocity);
@@ -1478,7 +1159,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			return;
 		}
 		apply_average_filter(&encoderCma, encoderC.velocity);
-		apply_pid1(&motorCpid, encoderCma.out);
+		apply_pid(&motorCpid, encoderCma.out);
 
 		if(!isMoving){ //double check that is still moving before setting the pwm
 			osDelay(10);
@@ -1486,7 +1167,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 
 		if(encoderC.direction){ //forward
-
 			if(motorCpid.output > 0){
 				setDirection(1,1);
 				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
@@ -1519,7 +1199,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 
 		apply_average_filter(&encoderDma, encoderD.velocity);
-		apply_pid1(&motorDpid, encoderDma.out);
+		apply_pid(&motorDpid, encoderDma.out);
 
 		if(!isMoving){ //double check that is still moving before setting the pwm
 			osDelay(10);

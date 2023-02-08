@@ -1,10 +1,8 @@
 #include "pid.h"
 
 #define PID_MAX 4000
-#define PID_MIN 1100
 
-#define SAMPLING_RATE 5000 //10ms, 5ms
-#define INTEGRAL_GAIN_MAX  2000000
+#define SAMPLING_RATE 5000 //5ms
 
 //need to adjust servomultiplier when changing speed
 extern int16_t MOTOR_VELOCITY_REF;
@@ -23,8 +21,7 @@ void setSpeed(int16_t speed){
 	MOTOR_VELOCITY_REF = speed;
 }
 
-
-void apply_pid1(pid_instance *m, int16_t measuredVelocity){
+void apply_pid(pid_instance *m, int16_t measuredVelocity){
 	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
 	m->errorIntegral += inputError * SAMPLING_RATE;
 
@@ -48,7 +45,18 @@ void apply_pid1(pid_instance *m, int16_t measuredVelocity){
 }
 
 
-	//	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
+void pid_reset(pid_instance *m){
+	m->lastError = 0;
+	m->errorIntegral = 0;
+	m->output = 0;
+}
+
+
+
+
+
+//void apply_pid1(pid_instance *m, int16_t measuredVelocity)
+//	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
 //	m->errorIntegral += inputError;
 //
 //	if(m->errorIntegral > INTEGRAL_GAIN_MAX)
@@ -69,31 +77,3 @@ void apply_pid1(pid_instance *m, int16_t measuredVelocity){
 //	m->lastError = inputError;
 //	osDelay(50);
 //}
-
-void apply_pid(pid_instance *m, int16_t measuredVelocity, uint32_t deltaTime){
-	int32_t inputError =MOTOR_VELOCITY_REF - measuredVelocity;
-	m->errorIntegral += inputError / deltaTime;
-
-	m->output =
-			kp * inputError +
-			ki * (m->errorIntegral)+
-			kd * (inputError-m->lastError)*deltaTime;
-
-	if(m->output >= PID_MAX)
-		m->output = PID_MAX;
-	//to ensure car wont go below min pid which can cause car to slow down alot
-	else if(m->output >= 0 && m->output < PID_MIN)
-		m->output = PID_MIN;
-	else if(m->output < -PID_MAX){ //if need to change direction
-		m->output = -PID_MAX;
-	}
-
-
-	m->lastError = inputError;
-}
-
-void pid_reset(pid_instance *m){
-	m->lastError = 0;
-	m->errorIntegral = 0;
-	m->output = 0;
-}
