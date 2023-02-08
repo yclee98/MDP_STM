@@ -20,6 +20,7 @@ extern uint8_t isMoving;
 extern uint16_t SERVO_CENTER;
 extern double totalAngle;
 extern uint8_t pidEnable;
+extern int16_t servoMultiplier;
 
 extern encoder_instance encoderC, encoderD;
 extern uint8_t OLED_row1[20];
@@ -141,16 +142,15 @@ void setDirection(int dir, int motor)
 	encoderD.direction = dir;
 }
 
+
 //1= forward, 0= reverse
 void forward(int dir, double dist)
 {
 	__disable_irq();
 	resetCar();
-	osDelay(10);
 	htim1.Instance->CCR4 = SERVO_CENTER;
-	osDelay(500);
 	setDirection(dir, 0);
-	osDelay(100);
+	osDelay(1000);
 	isMoving = 1;
 	__enable_irq();
 
@@ -159,8 +159,7 @@ void forward(int dir, double dist)
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 2000);
 	}
 
-	int servoMultiplier = 6;
-	int calPWM = 0;
+	int calPWM = SERVO_CENTER;
 	int avgDist = 0;
 
 	while(avgDist < dist){
@@ -177,9 +176,9 @@ void forward(int dir, double dist)
 		   calPWM = 200;
 		if(calPWM < 100)
 		   calPWM = 100;
-	   htim1.Instance->CCR4 = calPWM;
+		htim1.Instance->CCR4 = calPWM;
 
-	   sprintf(OLED_row1, "dist %d %d", avgDist, calPWM);
+	   sprintf(OLED_row1, "dist %d s %d", avgDist, calPWM);
 
 	   osDelay(10);
 	}
@@ -195,8 +194,8 @@ void motorStop(){
 	osDelay(50);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
-	osDelay(100);
 	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
+	osDelay(1000);
 	__enable_irq();
 	osDelay(100);
 }

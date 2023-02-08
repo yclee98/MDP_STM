@@ -6,8 +6,9 @@
 #define SAMPLING_RATE 10000
 #define INTEGRAL_GAIN_MAX  2000000
 
-int16_t MOTOR_VELOCITY_REF = 50; //speed maintain at around half of this
-
+//need to adjust servomultiplier when changing speed
+int16_t MOTOR_VELOCITY_REF = 60; //speed maintain at around half of this
+int16_t servoMultiplier = 6;
 
 float kp = 60;
 float ki = 500;

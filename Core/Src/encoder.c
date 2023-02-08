@@ -43,12 +43,11 @@ void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
 	osDelay(50);
 }
 
+void encoder_reset_counter(encoder_instance *e){
+	e->lastCounterValue = 0;
+}
+
 void encoder_reset(encoder_instance *e){
-	static int firstTime = 0;
-	if(!firstTime){
-		e->lastCounterValue = 0;
-		firstTime =1;
-	}
 	e->velocity = 0;
 	e->distance = 0.0;
 	e->direction = 1;

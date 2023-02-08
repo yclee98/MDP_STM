@@ -117,7 +117,7 @@ uint16_t encoderCountD = 0;
 uint16_t encoderCount = 0;
 
 //gyro
-double totalAngle;
+volatile double totalAngle;
 
 //OLED row display
 uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OLED_row5[20];
@@ -893,7 +893,10 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	sprintf(OLED_row0, "start");
-//	resetCar();
+	resetCar();
+	encoder_reset_counter(&encoderC);
+	encoder_reset_counter(&encoderD);
+
 	pidEnable = 1;
 
 	for (;;)
@@ -903,10 +906,10 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		forward(1, 120*2);
+		forward(1, 120);
 		osDelay(5000);
 
-		forward(0,120*2);
+		forward(0,120);
 		osDelay(5000);
 //		testMotorSpeed();
 	}
