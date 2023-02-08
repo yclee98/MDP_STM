@@ -59,20 +59,6 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for syncMotorTask */
-osThreadId_t syncMotorTaskHandle;
-const osThreadAttr_t syncMotorTask_attributes = {
-  .name = "syncMotorTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for encoderTask */
-osThreadId_t encoderTaskHandle;
-const osThreadAttr_t encoderTask_attributes = {
-  .name = "encoderTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
 /* Definitions for oledTask */
 osThreadId_t oledTaskHandle;
 const osThreadAttr_t oledTask_attributes = {
@@ -123,8 +109,6 @@ static void MX_TIM6_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_TIM10_Init(void);
 void StartDefaultTask(void *argument);
-void syncMotor(void *argument);
-void encoder(void *argument);
 void oledDisplayTask(void *argument);
 void StartGyroTask(void *argument);
 
@@ -186,8 +170,6 @@ int main(void)
 
 	//start task
 	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-//	syncMotorTaskHandle = osThreadNew(syncMotor, NULL, &syncMotorTask_attributes);
-//	encoderTaskHandle = osThreadNew(encoder, NULL, &encoderTask_attributes);
 	oledTaskHandle = osThreadNew(oledDisplayTask, NULL, &oledTask_attributes);
 	gyroTaskHandle = osThreadNew(StartGyroTask, NULL, &gyroTask_attributes);
   /* USER CODE END 2 */
@@ -832,217 +814,6 @@ void StartDefaultTask(void *argument)
 	}
 
   /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_syncMotor */
-/**
- * @brief Function implementing the syncMotorTask thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_syncMotor */
-void syncMotor(void *argument)
-{
-  /* USER CODE BEGIN syncMotor */
-
-	int motorCvel, motorDvel;
-	uint32_t currentTick, previousTick=0;
-
-	for (;;)
-	{
-		if(!isMoving){
-			osDelay(50);
-			previousTick = HAL_GetTick();
-			continue;
-		}
-		currentTick = HAL_GetTick();
-
-		if(currentTick - previousTick > 50L){
-			if(!pidEnable){
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 1500);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 1500);
-				sprintf(OLED_row4, "pid C 1500");
-				sprintf(OLED_row5, "pid D 1500");
-				osDelay(1000);
-			}else if(pidEnable){
-				motorCvel = encoderC.velocity;
-				motorDvel = encoderD.velocity;
-
-				apply_average_filter(&encoderCma, motorCvel);
-				apply_average_filter(&encoderDma, motorDvel);
-
-//				apply_pid(&motorCpid, encoderCma.out, currentTick-previousTick);
-//				apply_pid(&motorDpid, encoderDma.out, currentTick-previousTick);
-
-				if(!isMoving){ //need to double check it is moving before we set the speed
-					osDelay(10);
-					continue;
-				}
-
-				if(encoderC.direction){ //forward
-					if(motorCpid.output > 0){
-						setDirection(1,1);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-					}else{
-						setDirection(0,1);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-					}
-				}else{ //reverse
-					if(motorCpid.output > 0){
-						setDirection(0,1);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-					}else{
-						setDirection(1,1);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-					}
-				}
-
-				if(!isMoving){ //need to double check it is moving before we set the speed
-					osDelay(10);
-					continue;
-				}
-
-				if(encoderD.direction){ //forward
-					if(motorDpid.output > 0){
-						setDirection(1,2);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-					}else{
-						setDirection(0,2);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-					}
-				}else{ //reverse
-					if(motorDpid.output > 0){
-						setDirection(0,2);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-					}else{
-						setDirection(1,2);
-						__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-					}
-				}
-
-				sprintf(OLED_row4, "pid C %d", motorCpid.output);
-				sprintf(OLED_row5, "pid D %d", motorDpid.output);
-			}
-			previousTick = HAL_GetTick();;
-		}
-		//printToSerial(motorCvel, encoderCma.out, motorCpid.lastError, motorCpid.output, motorCpid.errorIntegral);
-		osDelay(50);
-	}
-  /* USER CODE END syncMotor */
-}
-
-/* USER CODE BEGIN Header_encoder */
-/**
- * @brief Function implementing the encoderTask thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_encoder */
-void encoder(void *argument)
-{
-  /* USER CODE BEGIN encoder */
-	/* Infinite loop */
-
-	int cnt1, cnt2, diffC;
-	int cnt3, cnt4, diffD;
-
-	uint32_t currentTick, previousTick=0;
-
-//	int avgDist = 0;
-
-	cnt1 = 0;//__HAL_TIM_GET_COUNTER(&htim4);
-	cnt3 = 0;//__HAL_TIM_GET_COUNTER(&htim2);
-	for(;;){
-		if(!isMoving){
-			previousTick = HAL_GetTick();
-			osDelay(100);
-			continue;
-		}
-		currentTick = HAL_GetTick();
-		//need increase to have better accurate counter??
-		//reading the counter too frequent cause the cnt not being accurate??
-		if(currentTick - previousTick >= 100L){ //dont change, will affect the speed previous time`	 100L
-			diffC = 0;
-			diffD = 0;
-
-			//get the counter after 100milisec
-			cnt2 = __HAL_TIM_GET_COUNTER(&htim4);
-			cnt4 = __HAL_TIM_GET_COUNTER(&htim2);
-
-			//encoderC
-			if(cnt2==cnt1){
-				diffC=0;
-			}
-			else if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim4))
-			{
-				if(cnt2 <= cnt1)
-					diffC = cnt1 - cnt2;
-				else
-					diffC = (65535 - cnt2) + cnt1;
-			}
-			else
-			{
-				if(cnt2 >= cnt1)
-					diffC = cnt2 - cnt1;
-				else
-					diffC = (65535 - cnt1) + cnt2; //problem
-			}
-
-			//encoderD
-			if(cnt4==cnt3){
-				diffD = 0;
-			}
-			else if(__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2))
-			{
-				if(cnt4 <= cnt3)
-					diffD = cnt3 - cnt4;
-				else
-					diffD = (65535 - cnt4) + cnt3;
-			}
-			else
-			{
-				if(cnt4 >= cnt3)
-					diffD = cnt4 - cnt3;
-				else
-					diffD = (65535 - cnt3) + cnt4;
-			}
-
-			//not sure why but something diffC or diffD is a very large number
-			//seem like the counter value became too close
-			//it went to the overflow line 65535 - ...
-			//then when abs it it will return a negative which is probably overflow
-			//this abs return negative most probably because of int16_t for velocity which is short
-			//diff is using int which is 32bit
-			//can manually change it to positive = workaround
-			encoderC.velocity = abs(diffC);
-			encoderD.velocity = abs(diffD);
-
-			//this a workaround
-			if(encoderC.velocity < 0)
-				encoderC.velocity = -encoderC.velocity;
-			if(encoderD.velocity < 0)
-				encoderD.velocity = -encoderD.velocity;
-
-			encoderC.distance += encoderC.velocity/fullRotationWheel*circumferenceWheel;
-			encoderD.distance += encoderD.velocity/fullRotationWheel*circumferenceWheel;
-
-			sprintf(OLED_row2, "spdC %d", encoderC.velocity);
-			sprintf(OLED_row3, "spdD %d", encoderD.velocity);
-
-			//printVelocity(encoderC.velocity, encoderD.velocity);
-
-			//get the counter before we start the 100milisec
-			cnt1 = __HAL_TIM_GET_COUNTER(&htim4);
-			cnt3 = __HAL_TIM_GET_COUNTER(&htim2);
-
-			//dont use currentTick to set previousTick since this thread might take more than 100milisec to run
-			//and will straight start looping even before 100milisec since the previous end of the loop
-			//we want this to run 100milisec after this loop end
-			previousTick = HAL_GetTick();
-		}
-		osDelay(10);
-	}
-  /* USER CODE END encoder */
 }
 
 /* USER CODE BEGIN Header_oledDisplayTask */

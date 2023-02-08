@@ -70,7 +70,6 @@ void setDirection(int dir, int motor)
 
 
 void motorStart(){
-
 	isMoving = 1;
 
 	if(pidEnable == 0){
@@ -88,12 +87,13 @@ void motorStart(){
 }
 
 void motorStop(){
-	resetCar();
+	isMoving = 0;
 
 	HAL_TIM_Base_Stop_IT(&htim7);
 	HAL_TIM_Base_Stop_IT(&htim6);
 	HAL_TIM_Base_Stop_IT(&htim10);
-	isMoving = 0;
+
+	resetCar();
 
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
 	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
@@ -118,7 +118,7 @@ void forward(int dir, double dist)
 
 	//servo control
 	while(isMoving){
-		if(encoderC.direction == 1) //forward
+		if(dir == 1) //forward
 			calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
 		else if(encoderC.direction == 0)//reverse
 			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
