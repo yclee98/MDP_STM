@@ -9,6 +9,7 @@ extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim10;
 
 extern encoder_instance encoderC, encoderD;
+extern pid_instance motorCpid, motorDpid;
 
 extern uint16_t SERVO_CENTER;
 extern int16_t servoMultiplier;
@@ -68,6 +69,45 @@ void setDirection(int dir, int motor)
 	encoderD.direction = dir;
 }
 
+void setMotorCPWM(){
+	if(encoderC.direction){ //forward
+		if(motorCpid.output > 0){
+			setDirection(1,1);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+		}else{
+			setDirection(0,1);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+		}
+	}else{ //reverse
+		if(motorCpid.output > 0){
+			setDirection(0,1);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
+		}else{
+			setDirection(1,1);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
+		}
+	}
+}
+
+void setMotorDPWM(){
+	if(encoderD.direction){ //forward
+		if(motorDpid.output > 0){
+			setDirection(1,2);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+		}else{
+			setDirection(0,2);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+		}
+	}else{ //reverse
+		if(motorDpid.output > 0){
+			setDirection(0,2);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
+		}else{
+			setDirection(1,2);
+			__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
+		}
+	}
+}
 
 void motorStart(){
 	isMoving = 1;
@@ -133,7 +173,6 @@ void forward(int dir, double dist)
 	}
 	osDelay(50);
 }
-
 
 int addAngle(int angle){
 	angle += totalAngle;

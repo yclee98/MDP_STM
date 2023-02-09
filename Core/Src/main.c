@@ -853,40 +853,39 @@ void oledDisplayTask(void *argument)
 void StartGyroTask(void *argument)
 {
   /* USER CODE BEGIN StartGyroTask */
-		gyro_Init();
-		uint8_t val[2] = {0, 0};
-		uint32_t currentTick, previousTick=0;
-		double offset = 0;//7.848882995;
+	gyro_Init();
+	uint8_t val[2] = {0, 0};
+	uint32_t currentTick, previousTick=0;
+	double offset = 0;//7.848882995;
 
-		int16_t angularSpeed = 0;
-		double measuredAngle = 0;
-		totalAngle = 0;
+	int16_t angularSpeed = 0;
+	double measuredAngle = 0;
+	totalAngle = 0;
 
-		previousTick = HAL_GetTick();
+	previousTick = HAL_GetTick();
 
   /* Infinite loop */
   for(;;)
   {
 	  currentTick = HAL_GetTick(); //millisecond
 	  if(currentTick - previousTick >= 50L){
-		readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
-		angularSpeed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte; degree/second
-		//when it is not moving, it is hovering at around this range
-		if(angularSpeed >= -10 && angularSpeed <= 10)
-			measuredAngle = 0.0;
-		else
-			measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
+		  readByte(0x37, val); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
+		  angularSpeed = (val[0] << 8) | val[1]; //(highByte * 256) + lowByte; degree/second
+		  //when it is not moving, it is hovering at around this range
+		  if(angularSpeed >= -10 && angularSpeed <= 10)
+			  measuredAngle = 0.0;
+		  else
+			  measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
 
-		totalAngle += measuredAngle;
+		  totalAngle += measuredAngle;
 
+		  if(totalAngle >= 360)
+			  totalAngle -=360;
+		  if(totalAngle <= -360)
+			  totalAngle +=360;
 
-	   if(totalAngle >= 360)
-		   totalAngle -=360;
-	   if(totalAngle <= -360)
-		   totalAngle +=360;
-
-		sprintf(OLED_row0, "gy %d", (long)totalAngle);
-	    previousTick = HAL_GetTick();
+		  sprintf(OLED_row0, "gy %d", (long)totalAngle);
+		  previousTick = HAL_GetTick();
 	  }
 	  osDelay(10);
   }
@@ -925,80 +924,35 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		update_encoder(&encoderC, &htim4);
 		sprintf(OLED_row2, "velC %d", encoderC.velocity);
 
-		if(!pidEnable){ //dont do pid if not enable
-			osDelay(10);
+		if(!pidEnable) //dont do pid if not enable
 			return;
-		}
+
 		apply_average_filter(&encoderCma, encoderC.velocity);
 		apply_pid(&motorCpid, encoderCma.out);
 
-		if(!isMoving){ //double check that is still moving before setting the pwm
-			osDelay(10);
-			return;
-		}
-
-		if(encoderC.direction){ //forward
-			if(motorCpid.output > 0){
-				setDirection(1,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-			}else{
-				setDirection(0,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-			}
-		}else{ //reverse
-			if(motorCpid.output > 0){
-				setDirection(0,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
-			}else{
-				setDirection(1,1);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, -motorCpid.output);
-			}
-		}
+		if(isMoving) //double check that is still moving before setting the pwm
+			setMotorCPWM();
 
 		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
 //		printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
-
 	}
 	if(htim==&htim6 && isMoving){
 		update_encoder(&encoderD, &htim2);
 		sprintf(OLED_row3, "velD %d", encoderD.velocity);
 
-		if(!pidEnable){ //dont do pid if not enable
-			osDelay(10);
+		if(!pidEnable) //dont do pid if not enable
 			return;
-		}
 
 		apply_average_filter(&encoderDma, encoderD.velocity);
 		apply_pid(&motorDpid, encoderDma.out);
 
-		if(!isMoving){ //double check that is still moving before setting the pwm
-			osDelay(10);
-			return;
-		}
-
-		if(encoderD.direction){ //forward
-			if(motorDpid.output > 0){
-				setDirection(1,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-			}else{
-				setDirection(0,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-			}
-		}else{ //reverse
-			if(motorDpid.output > 0){
-				setDirection(0,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
-			}else{
-				setDirection(1,2);
-				__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, -motorDpid.output);
-			}
-		}
+		if(isMoving) //double check that is still moving before setting the pwm
+			setMotorDPWM();
 
 		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
 //		printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
-
 	}
 
   /* USER CODE END Callback 0 */
