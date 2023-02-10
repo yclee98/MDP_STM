@@ -17,9 +17,9 @@ void setPID(float p, float i, float d){
 	kd = d;
 }
 
-void setSpeed(int16_t speed){
-	MOTOR_VELOCITY_REF = speed;
-}
+//void setSpeed(int16_t speed){
+//	MOTOR_VELOCITY_REF = speed;
+//}
 
 void setTarget(pid_instance *m, int16_t target){
 	m->target = target;
@@ -51,9 +51,9 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 	osDelay(50);
 }
 
-float kp1 = 2;
+float kp1 = 0.5;
 float ki1 = 0.000001;
-float kd1 = 0;
+float kd1 = 500;
 
 void apply_pid1(pid_instance *m, int16_t measuredGyro){
 

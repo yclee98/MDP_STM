@@ -839,15 +839,15 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		//forward(1,300);
-		turnRight(1, 90);
-		osDelay(5000);
-		turnRight(0, 90);
-			osDelay(5000);
-			turnLeft(1, 90);
-				osDelay(5000);
-				turnLeft(0, 90);
-					osDelay(5000);
+		forward(1,120);
+//		turnRight(1, 90);
+//		osDelay(5000);
+//		turnRight(0, 90);
+//			osDelay(5000);
+//			turnLeft(1, 90);
+//				osDelay(5000);
+//				turnLeft(0, 90);
+//					osDelay(5000);
 
 		osDelay(5000);
 
@@ -1007,10 +1007,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				motorStop();
 			}
 			if(avgDist >= targetDistance-5){
-				setSpeed(1);
+				setTarget(&motorCpid, 1);
+					setTarget(&motorDpid, 1);
 			}
 			else if(avgDist >= targetDistance-30){
-				setSpeed(15);
+				setTarget(&motorCpid, 15);
+					setTarget(&motorDpid,15);
 			}
 			sprintf(OLED_row1, "dist %d", avgDist);
 		}
@@ -1030,7 +1032,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if(isMoving) //double check that is still moving before setting the pwm
 			setMotorCPWM();
 
-		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
+//		sprintf(OLED_row4, "pwmC %d", motorCpid.output);
 //		printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
 	}
@@ -1047,7 +1049,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if(isMoving) //double check that is still moving before setting the pwm
 			setMotorDPWM();
 
-		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
+//		sprintf(OLED_row5, "pwmD %d", motorDpid.output);
 //		printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
 	}

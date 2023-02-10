@@ -21,7 +21,7 @@ extern double totalAngle;
 extern int targetAngle;
 extern int targetDistance;
 
-extern uint8_t OLED_row1[20];
+extern uint8_t OLED_row1[20], OLED_row4[20];
 
 //forward = 1, reverse = 0
 //c=1, d=2, both=0
@@ -151,7 +151,9 @@ void forward(int dir, double dist)
 {
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
-	setSpeed(30);
+//	setSpeed(30);
+	setTarget(&motorCpid, 25);
+	setTarget(&motorDpid, 25);
 	targetDistance = dist;
 	osDelay(1000);
 
@@ -187,6 +189,10 @@ void forward(int dir, double dist)
 //		printVelocity(calPWM, 0);
 
 		htim1.Instance->CCR4 = calPWM;
+
+		sprintf(OLED_row4, "serv %d", calPWM);
+
+
 		osDelay(50);
 	}
 
