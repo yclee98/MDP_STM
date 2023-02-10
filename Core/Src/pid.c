@@ -1,6 +1,6 @@
 #include "pid.h"
 
-#define PID_MAX 4000
+#define PID_MAX 7000
 
 #define SAMPLING_RATE 5000 //5ms
 

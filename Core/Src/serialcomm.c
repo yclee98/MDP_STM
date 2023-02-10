@@ -19,34 +19,34 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//Prevent unused arguments compilation warning
 	UNUSED(huart);
 
-//	HAL_UART_Transmit(huart,(uint8_t *)aRxBuffer,sizeof(aRxBuffer),0xFFFF);
-//	sprintf(OLED_row0, "rec %s", aRxBuffer);
-//	HAL_UART_Receive_IT(huart,(uint8_t *)aRxBuffer,4); //setup new receive interrupt
+	HAL_UART_Transmit(huart,(uint8_t *)"turn left",9,0xFFFF);
+	sprintf(OLED_row0, "rec %s", aRxBuffer);
+	HAL_UART_Receive_IT(huart,(uint8_t *)aRxBuffer,RxBUFFSIZE); //setup new receive interrupt
 
 	//for receiving pid from serial
-	int8_t counter =0;
-	float kp = 0;
-	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
-	{
-		kp= *(aRxBuffer + counter) - 48 + kp * 10;
-		counter++;
-	}
-	counter++;
-	float ki = 0;
-	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
-	{
-		ki= *(aRxBuffer + counter) - 48 + ki * 10;
-		counter++;
-	}
-	counter++;
-	float kd = 0;
-	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
-	{
-		kd= (*(aRxBuffer + counter) - 48)/10.0 + kd / 10.0;
-		counter++;
-	}
-	sprintf(OLED_row0, "rec %d %d %d", (int)kp, (int)ki, (int)kd);
-	setPID(kp,ki,kd);
+//	int8_t counter =0;
+//	float kp = 0;
+//	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
+//	{
+//		kp= *(aRxBuffer + counter) - 48 + kp * 10;
+//		counter++;
+//	}
+//	counter++;
+//	float ki = 0;
+//	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
+//	{
+//		ki= *(aRxBuffer + counter) - 48 + ki * 10;
+//		counter++;
+//	}
+//	counter++;
+//	float kd = 0;
+//	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
+//	{
+//		kd= (*(aRxBuffer + counter) - 48)/10.0 + kd / 10.0;
+//		counter++;
+//	}
+//	sprintf(OLED_row0, "rec %d %d %d", (int)kp, (int)ki, (int)kd);
+//	setPID(kp,ki,kd);
 }
 
 void printPIDdebug(int value1,int value2, int value3, int value4, long value5){

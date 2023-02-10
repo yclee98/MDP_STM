@@ -83,7 +83,7 @@ volatile uint8_t isMoving = 0;
 uint8_t pidEnable = 1;
 uint16_t SERVO_CENTER = 148;
 int16_t MOTOR_VELOCITY_REF = 10;
-int16_t servoMultiplier = 8;
+int16_t servoMultiplier = 4;
 double fullRotationWheel = 1580;
 double circumferenceWheel = 21.3;
 volatile double totalAngle =0;
@@ -799,18 +799,18 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-//		forward(1,90);
+		forward(1,50);
+		osDelay(5000);
+
+
+//		turnLeft(1,45);
 //		osDelay(5000);
-
-
-		turnLeft(1,45);
-		osDelay(5000);
-		forward(0, 18);
-		osDelay(5000);
-		turnRight(0,45);
-		osDelay(5000);
-		forward(1,18);
-		osDelay(10000);
+//		forward(0, 18);
+//		osDelay(5000);
+//		turnRight(0,45);
+//		osDelay(5000);
+//		forward(1,18);
+//		osDelay(10000);
 	}
 
   /* USER CODE END 5 */
@@ -914,6 +914,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			int avgDist = (encoderC.distance+encoderD.distance)/2;
 			if(avgDist >= targetDistance){
 				motorStop();
+			}
+			if(avgDist >= targetDistance-5){
+				setSpeed(1);
+			}
+			else if(avgDist >= targetDistance-30){
+				setSpeed(15);
 			}
 			sprintf(OLED_row1, "dist %d", avgDist);
 		}

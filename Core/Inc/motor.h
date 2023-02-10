@@ -10,8 +10,8 @@ void setMotorDPWM();
 void motorStart();
 void motorStop();
 void forward(int dir, double dist);
-void turnLeft(int dir,int angle);
-void turnRight(int dir,int angle);
+void turnLeft(int dir,double angle);
+void turnRight(int dir,double angle);
 
 
 #endif /* INC_MOTOR_H_ */

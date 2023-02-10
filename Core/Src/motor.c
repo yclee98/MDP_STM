@@ -146,7 +146,7 @@ void forward(int dir, double dist)
 {
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
-	setSpeed(15);
+	setSpeed(40);
 	targetDistance = dist;
 	osDelay(1000);
 
@@ -174,7 +174,7 @@ void forward(int dir, double dist)
 	osDelay(50);
 }
 
-int addAngle(int angle){
+int addAngle(double angle){
 	angle += totalAngle;
 
 	if(angle >= 360)
@@ -185,7 +185,7 @@ int addAngle(int angle){
 	return angle;
 }
 
-void turnLeft(int dir, int angle)
+void turnLeft(int dir, double angle)
 {
 //	angle = addAngle(angle);
 	setSpeed(5);
@@ -205,7 +205,7 @@ void turnLeft(int dir, int angle)
 
 }
 
-void turnRight(int dir, int angle)
+void turnRight(int dir, double angle)
 {
 //	angle = addAngle(-angle);
 
