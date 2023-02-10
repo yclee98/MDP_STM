@@ -2,13 +2,15 @@
 #include "pid.h"
 
 extern UART_HandleTypeDef huart3;
-extern uint8_t OLED_row0[20];
+extern uint8_t OLED_row5[20];
 
 #define TxBUFFSIZE 35
-#define RxBUFFSIZE 8
+#define RxBUFFSIZE 3
 
 uint8_t aTxBuffer[TxBUFFSIZE];
 uint8_t aRxBuffer[RxBUFFSIZE];
+
+extern TIM_HandleTypeDef htim1;
 
 void SerialComm_Init(){
 	HAL_UART_Receive_IT(&huart3, (uint8_t *)aRxBuffer,RxBUFFSIZE);
@@ -19,8 +21,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//Prevent unused arguments compilation warning
 	UNUSED(huart);
 
-	HAL_UART_Transmit(huart,(uint8_t *)"turn left",9,0xFFFF);
-	sprintf(OLED_row0, "rec %s", aRxBuffer);
+//	HAL_UART_Transmit(huart,(uint8_t *)"turn left",9,0xFFFF);
+
+	int ser = atoi(aRxBuffer);
+
+	if(ser>250)
+		ser = 150;
+	if(ser<90)
+		ser=150;
+	htim1.Instance->CCR4 = ser;
+
+	sprintf(OLED_row5, "rec %s", aRxBuffer);
+
+//	turnLeft(1,360);
+
 	HAL_UART_Receive_IT(huart,(uint8_t *)aRxBuffer,RxBUFFSIZE); //setup new receive interrupt
 
 	//for receiving pid from serial

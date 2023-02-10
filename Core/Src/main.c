@@ -49,6 +49,7 @@ TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef htim13;
 
 UART_HandleTypeDef huart3;
 
@@ -80,6 +81,7 @@ uint8_t OLED_row0[20],OLED_row1[20],OLED_row2[20],OLED_row3[20],OLED_row4[20],OL
 
 volatile int start = 0;
 volatile uint8_t isMoving = 0;
+volatile uint8_t isAngle = 0;
 uint8_t pidEnable = 1;
 uint16_t SERVO_CENTER = 148;
 int16_t MOTOR_VELOCITY_REF = 10;
@@ -93,6 +95,8 @@ int targetDistance = 0;
 encoder_instance encoderC, encoderD;
 pid_instance motorCpid, motorDpid;
 mov_aver_intance encoderCma, encoderDma;
+
+double liveVal1 = 0;
 
 /* USER CODE END PV */
 
@@ -108,6 +112,7 @@ static void MX_I2C1_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_TIM10_Init(void);
+static void MX_TIM13_Init(void);
 void StartDefaultTask(void *argument);
 void oledDisplayTask(void *argument);
 void StartGyroTask(void *argument);
@@ -156,6 +161,7 @@ int main(void)
   MX_TIM6_Init();
   MX_TIM7_Init();
   MX_TIM10_Init();
+  MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
 	OLED_Init();
 	SerialComm_Init();
@@ -650,6 +656,37 @@ static void MX_TIM10_Init(void)
 }
 
 /**
+  * @brief TIM13 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM13_Init(void)
+{
+
+  /* USER CODE BEGIN TIM13_Init 0 */
+
+  /* USER CODE END TIM13_Init 0 */
+
+  /* USER CODE BEGIN TIM13_Init 1 */
+
+  /* USER CODE END TIM13_Init 1 */
+  htim13.Instance = TIM13;
+  htim13.Init.Prescaler = 15;
+  htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim13.Init.Period = 4999;
+  htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM13_Init 2 */
+
+  /* USER CODE END TIM13_Init 2 */
+
+}
+
+/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
@@ -791,6 +828,9 @@ void StartDefaultTask(void *argument)
 	encoder_reset_counter(&encoderD, &htim2);
 
 	pidEnable = 1;
+	htim1.Instance->CCR4 = SERVO_CENTER;
+
+//	HAL_TIM_Base_Start_IT(&htim13);
 
 	for (;;)
 	{
@@ -799,7 +839,16 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		forward(1,50);
+		//forward(1,300);
+		turnRight(1, 90);
+		osDelay(5000);
+		turnRight(0, 90);
+			osDelay(5000);
+			turnLeft(1, 90);
+				osDelay(5000);
+				turnLeft(0, 90);
+					osDelay(5000);
+
 		osDelay(5000);
 
 
@@ -864,6 +913,8 @@ void StartGyroTask(void *argument)
 
 	previousTick = HAL_GetTick();
 
+	double off = 360.0/356.75;
+
   /* Infinite loop */
   for(;;)
   {
@@ -875,14 +926,14 @@ void StartGyroTask(void *argument)
 		  if(angularSpeed >= -10 && angularSpeed <= 10)
 			  measuredAngle = 0.0;
 		  else
-			  measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0);
+			  measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0)*off;
 
 		  totalAngle += measuredAngle;
 
-		  if(totalAngle >= 360)
-			  totalAngle -=360;
-		  if(totalAngle <= -360)
-			  totalAngle +=360;
+		  if(totalAngle >= 720)
+			  totalAngle -=720;
+		  if(totalAngle <= -720)
+			  totalAngle +=720;
 
 		  sprintf(OLED_row0, "gy %d", (long)totalAngle);
 		  previousTick = HAL_GetTick();
@@ -900,14 +951,54 @@ void StartGyroTask(void *argument)
   * @param  htim : TIM handle
   * @retval None
   */
+//uint8_t gyroVal[2] = {0, 0};
+//double gyroOffset = 360.0/356.75;
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
+
+//	if(htim == &htim13){
+//		 readByte(0x37, gyroVal); //read GYRO_ZOUT_H and GYRO_ZOUT_L since we pass val which is 16 bit
+//		  int16_t angularSpeed = (gyroVal[0] << 8) | gyroVal[1]; //(highByte * 256) + lowByte; degree/second
+//		  if(angularSpeed >= -10 && angularSpeed <= 10)
+//			  totalAngle += 0.0;
+//		  else
+//			  totalAngle += ((double)(angularSpeed)) * (5 / 16400.0)*gyroOffset;
+//
+//		  if(totalAngle >= 720)
+//			  totalAngle -=720;
+//		  if(totalAngle <= -720)
+//			  totalAngle +=720;
+//
+//		  liveVal1 = totalAngle;
+//		  sprintf(OLED_row0, "gy %d", (long)totalAngle);
+//	}
+
 	if(htim ==&htim10 && isMoving){
 		//turning
-		if(targetAngle != 0 && abs(totalAngle) >= targetAngle){
-			motorStop();
-			return;
+		if (isAngle)
+		{
+			if (htim1.Instance->CCR4 <= SERVO_CENTER){ // Turning Left
+				if(totalAngle >= targetAngle-3 && encoderC.direction == 1){
+					motorStop();
+					return;
+				}
+				if(totalAngle <= targetAngle+3 && encoderC.direction == 0){
+					motorStop();
+					return;
+				}
+			}
+			if (htim1.Instance->CCR4 >= SERVO_CENTER){ // Turning Right
+				if(totalAngle <= targetAngle+3 && encoderC.direction == 1){
+					motorStop();
+					return;
+				}
+				if(totalAngle >= targetAngle-3 && encoderC.direction == 0){
+					motorStop();
+					return;
+				}
+			}
 		}
 		//moving straight/reverse
 		else if(targetDistance != 0){

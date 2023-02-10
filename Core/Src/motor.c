@@ -121,32 +121,37 @@ void motorStart(){
 	HAL_TIM_Base_Start_IT(&htim10);
 
 	//for pid/encoder interrupt
-	HAL_TIM_Base_Start_IT(&htim6);
-	HAL_TIM_Base_Start_IT(&htim7);
+	HAL_TIM_Base_Start_IT(&htim6); //motorD
+	HAL_TIM_Base_Start_IT(&htim7); //motorC
 
 }
 
 void motorStop(){
 	isMoving = 0;
+	__disable_irq();
+
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
+	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
 
 	HAL_TIM_Base_Stop_IT(&htim7);
 	HAL_TIM_Base_Stop_IT(&htim6);
 	HAL_TIM_Base_Stop_IT(&htim10);
+	__enable_irq();
 
 	resetCar();
 
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 0);
-	__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 0);
-	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
+//	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
 	osDelay(50);
 }
+
+pid_instance gyroPID;
 
 //1= forward, 0= reverse
 void forward(int dir, double dist)
 {
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
-	setSpeed(40);
+	setSpeed(30);
 	targetDistance = dist;
 	osDelay(1000);
 
@@ -154,23 +159,38 @@ void forward(int dir, double dist)
 		motorStart();
 	}
 
+	pid_reset(&gyroPID);
+
 	int calPWM = SERVO_CENTER;
 
 	//servo control
 	while(isMoving){
-		if(dir == 1) //forward
-			calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
-		else if(encoderC.direction == 0)//reverse
-			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
-		else
-			calPWM = SERVO_CENTER;
+//		if(dir == 1) //forward
+//			calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
+//		else if(encoderC.direction == 0)//reverse
+//			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
+//		else
+//			calPWM = SERVO_CENTER;
+
+		if(dir == 1){
+			apply_pid1(&gyroPID, totalAngle);
+			calPWM = (int)(SERVO_CENTER - gyroPID.output);
+		}
+//		else if(encoderC.direction == 0)//reverse
+//			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
+//
+//
 		if(calPWM > 200)
 			calPWM = 200;
 		if(calPWM < 100)
 			calPWM = 100;
+//		printVelocity(calPWM, 0);
+
 		htim1.Instance->CCR4 = calPWM;
 		osDelay(50);
 	}
+
+
 	osDelay(50);
 }
 
@@ -184,16 +204,24 @@ int addAngle(double angle){
 
 	return angle;
 }
-
+extern uint8_t isAngle;
 void turnLeft(int dir, double angle)
 {
 //	angle = addAngle(angle);
-	setSpeed(5);
-	htim1.Instance->CCR4 = 114;
+//	setSpeed(10);
+	setTarget(&motorCpid, 5);
+	setTarget(&motorDpid, 10);
+	htim1.Instance->CCR4 = 99;//99;
 	setDirection(dir, 0);
-	osDelay(100);
+	osDelay(500);
+
+	isAngle = 1;
+	if(dir)
+		targetAngle = angle;
+	else
+		targetAngle = -angle;
+
 	motorStart();
-	targetAngle = angle;
 
 	while(isMoving)
 		osDelay(100);
@@ -203,18 +231,27 @@ void turnLeft(int dir, double angle)
 	else
 		totalAngle -= angle;
 
+	isAngle = 0;
 }
 
 void turnRight(int dir, double angle)
 {
 //	angle = addAngle(-angle);
+//	setSpeed(5);
+	setTarget(&motorDpid, 5);
+		setTarget(&motorCpid, 10);
 
-	setSpeed(5);
-	htim1.Instance->CCR4 = 190;
+	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);
-	osDelay(100);
-	motorStart();
-	targetAngle = angle;
+	osDelay(500);
+	isAngle = 1;
+
+	if(dir)
+		targetAngle = -angle;
+	else
+		targetAngle = angle;
+
+	motorStart();;
 
 	while(isMoving)
 		osDelay(100);
@@ -223,4 +260,6 @@ void turnRight(int dir, double angle)
 		totalAngle +=angle;
 	else
 		totalAngle -= angle;
+
+	isAngle = 0;
 }
