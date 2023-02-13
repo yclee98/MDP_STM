@@ -40,7 +40,7 @@ void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
 	e->distance += e->velocity/fullRotationWheel*circumferenceWheel;
 
 	e->lastCounterValue = cnt2;
-	osDelay(50);
+//	osDelay(50);
 }
 
 void encoder_reset_counter(encoder_instance *e, TIM_HandleTypeDef *htim){

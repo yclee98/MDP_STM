@@ -21,21 +21,21 @@ void setPID(float p, float i, float d){
 //	MOTOR_VELOCITY_REF = speed;
 //}
 
-void setTarget(pid_instance *m, int16_t target){
+void setTarget(pid_instance *m, double target){
 	m->target = target;
 }
 
 
 void apply_pid(pid_instance *m, int16_t measuredVelocity){
 //	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
-	int32_t inputError = m->target - measuredVelocity;
+	double inputError = m->target - measuredVelocity;
 
 	m->errorIntegral += inputError * SAMPLING_RATE;
 
-	int32_t errorChange = inputError - m->lastError;
+	double errorChange = inputError - m->lastError;
 	m->lastError = inputError;
 
-	int32_t errorRate = errorChange / SAMPLING_RATE;
+	double errorRate = errorChange / SAMPLING_RATE;
 
 	m->output =
 			kp * inputError +
@@ -48,7 +48,7 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 		m->output = -PID_MAX;
 
 
-	osDelay(50);
+//	osDelay(50);
 }
 
 float kp1 = 0.5;
@@ -75,7 +75,7 @@ void apply_pid1(pid_instance *m, int16_t measuredGyro){
 //	else if(m->output <= 100)
 //		m->output = 100;
 
-	osDelay(50);
+//	osDelay(50);
 }
 
 

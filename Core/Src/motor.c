@@ -152,8 +152,8 @@ void forward(int dir, double dist)
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
 //	setSpeed(30);
-	setTarget(&motorCpid, 25);
-	setTarget(&motorDpid, 25);
+	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
+	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
 	targetDistance = dist;
 	osDelay(1000);
 
@@ -213,10 +213,8 @@ int addAngle(double angle){
 extern uint8_t isAngle;
 void turnLeft(int dir, double angle)
 {
-//	angle = addAngle(angle);
-//	setSpeed(10);
-	setTarget(&motorCpid, 5);
-	setTarget(&motorDpid, 10);
+	setTarget(&motorDpid, 10.0);
+	setTarget(&motorCpid, 10.0*0.4846855213416525);
 	htim1.Instance->CCR4 = 99;//99;
 	setDirection(dir, 0);
 	osDelay(500);
@@ -242,10 +240,8 @@ void turnLeft(int dir, double angle)
 
 void turnRight(int dir, double angle)
 {
-//	angle = addAngle(-angle);
-//	setSpeed(5);
-	setTarget(&motorDpid, 5);
-		setTarget(&motorCpid, 10);
+	setTarget(&motorDpid, 10.0*0.505463828125);
+	setTarget(&motorCpid, 10.0);
 
 	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);
@@ -257,7 +253,7 @@ void turnRight(int dir, double angle)
 	else
 		targetAngle = angle;
 
-	motorStart();;
+	motorStart();
 
 	while(isMoving)
 		osDelay(100);

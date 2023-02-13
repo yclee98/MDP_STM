@@ -840,7 +840,7 @@ void StartDefaultTask(void *argument)
 			continue;
 		}
 		forward(1,120);
-//		turnRight(1, 90);
+//		turnLeft(1, 360);
 //		osDelay(5000);
 //		turnRight(0, 90);
 //			osDelay(5000);
