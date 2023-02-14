@@ -16,6 +16,7 @@ extern int16_t servoMultiplier;
 
 extern uint8_t pidEnable;
 extern uint8_t isMoving;
+extern uint8_t isAngle;
 
 extern double totalAngle;
 extern int targetAngle;
@@ -140,7 +141,7 @@ void motorStop(){
 
 	resetCar();
 
-//	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
+	htim1.Instance->CCR4 = SERVO_CENTER;//return wheel straight
 	osDelay(50);
 }
 
@@ -151,17 +152,18 @@ void forward(int dir, double dist)
 {
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
-//	setSpeed(30);
 	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
 	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
 	targetDistance = dist;
 	osDelay(1000);
 
+	pid_reset(&gyroPID);
+
 	if (dist != 0){
 		motorStart();
+	}else{
+		return;
 	}
-
-	pid_reset(&gyroPID);
 
 	int calPWM = SERVO_CENTER;
 
@@ -174,24 +176,23 @@ void forward(int dir, double dist)
 //		else
 //			calPWM = SERVO_CENTER;
 
+		apply_pid1(&gyroPID, totalAngle);
+
 		if(dir == 1){
-			apply_pid1(&gyroPID, totalAngle);
 			calPWM = (int)(SERVO_CENTER - gyroPID.output);
 		}
-//		else if(encoderC.direction == 0)//reverse
-//			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
-//
-//
-		if(calPWM > 200)
-			calPWM = 200;
-		if(calPWM < 100)
-			calPWM = 100;
+		else if(dir == 0)//reverse
+			calPWM = (int)(SERVO_CENTER + gyroPID.output);
+
+		if(calPWM > 249)
+			calPWM = 249;
+		if(calPWM < 99)
+			calPWM = 99;
 //		printVelocity(calPWM, 0);
 
 		htim1.Instance->CCR4 = calPWM;
 
-		sprintf(OLED_row4, "serv %d", calPWM);
-
+		sprintf(OLED_row4, "servo %d", calPWM);
 
 		osDelay(50);
 	}
@@ -210,12 +211,12 @@ int addAngle(double angle){
 
 	return angle;
 }
-extern uint8_t isAngle;
+
 void turnLeft(int dir, double angle)
 {
 	setTarget(&motorDpid, 10.0);
 	setTarget(&motorCpid, 10.0*0.4846855213416525);
-	htim1.Instance->CCR4 = 99;//99;
+	htim1.Instance->CCR4 = 99;
 	setDirection(dir, 0);
 	osDelay(500);
 

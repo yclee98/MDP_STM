@@ -96,6 +96,11 @@ encoder_instance encoderC, encoderD;
 pid_instance motorCpid, motorDpid;
 mov_aver_intance encoderCma, encoderDma;
 
+uint8_t waitingForCommand = 1;
+uint8_t direction = 0; //forward=1 or backward=0
+uint8_t movement = ' '; //l,r,s
+uint32_t magnitude = 0;
+
 double liveVal1 = 0;
 
 /* USER CODE END PV */
@@ -830,6 +835,8 @@ void StartDefaultTask(void *argument)
 	pidEnable = 1;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 
+	double degree=0;
+
 //	HAL_TIM_Base_Start_IT(&htim13);
 
 	for (;;)
@@ -839,27 +846,33 @@ void StartDefaultTask(void *argument)
 			osDelay(200);
 			continue;
 		}
-		forward(1,120);
+
+		if(!waitingForCommand){
+			if(movement == 's'){
+				forward(direction, magnitude);
+			}
+			else if(movement == 'l'){
+				degree = (magnitude/1000.0) * (180.0/M_PI);
+				turnLeft(direction, degree);
+			}
+			else if(movement == 'r'){
+				degree = (magnitude/1000.0) * (180.0/M_PI);
+				turnRight(direction, degree);
+			}
+			commandCompleted();
+		}
+		osDelay(10);
+
+//		forward(1,120);
 //		turnLeft(1, 360);
 //		osDelay(5000);
 //		turnRight(0, 90);
-//			osDelay(5000);
-//			turnLeft(1, 90);
-//				osDelay(5000);
-//				turnLeft(0, 90);
-//					osDelay(5000);
-
-		osDelay(5000);
-
-
-//		turnLeft(1,45);
 //		osDelay(5000);
-//		forward(0, 18);
+//		turnLeft(1, 90);
 //		osDelay(5000);
-//		turnRight(0,45);
+//		turnLeft(0, 90);
 //		osDelay(5000);
-//		forward(1,18);
-//		osDelay(10000);
+//		osDelay(5000);
 	}
 
   /* USER CODE END 5 */
@@ -905,7 +918,7 @@ void StartGyroTask(void *argument)
 	gyro_Init();
 	uint8_t val[2] = {0, 0};
 	uint32_t currentTick, previousTick=0;
-	double offset = 0;//7.848882995;
+	double offset = 0;
 
 	int16_t angularSpeed = 0;
 	double measuredAngle = 0;

@@ -5,12 +5,17 @@ extern UART_HandleTypeDef huart3;
 extern uint8_t OLED_row5[20];
 
 #define TxBUFFSIZE 35
-#define RxBUFFSIZE 3
+#define RxBUFFSIZE 8
 
 uint8_t aTxBuffer[TxBUFFSIZE];
 uint8_t aRxBuffer[RxBUFFSIZE];
 
 extern TIM_HandleTypeDef htim1;
+
+extern uint8_t waitingForCommand;
+extern uint8_t direction; //forward=1 or backward=0
+extern uint8_t movement; //turn left/right or straight
+extern uint32_t magnitude;
 
 void SerialComm_Init(){
 	HAL_UART_Receive_IT(&huart3, (uint8_t *)aRxBuffer,RxBUFFSIZE);
@@ -20,47 +25,32 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	//Prevent unused arguments compilation warning
 	UNUSED(huart);
-
-//	HAL_UART_Transmit(huart,(uint8_t *)"turn left",9,0xFFFF);
-
-	int ser = atoi(aRxBuffer);
-
-	if(ser>250)
-		ser = 150;
-	if(ser<90)
-		ser=150;
-	htim1.Instance->CCR4 = ser;
-
 	sprintf(OLED_row5, "rec %s", aRxBuffer);
 
-//	turnLeft(1,360);
+	receiveCommand();
+}
 
-	HAL_UART_Receive_IT(huart,(uint8_t *)aRxBuffer,RxBUFFSIZE); //setup new receive interrupt
+void commandCompleted(){
+	waitingForCommand = 1;
+	sprintf(aTxBuffer, "reached");
+	HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
+	HAL_UART_Receive_IT(&huart3,(uint8_t *)aRxBuffer,RxBUFFSIZE); //receive next set of command
+}
 
-	//for receiving pid from serial
-//	int8_t counter =0;
-//	float kp = 0;
-//	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
-//	{
-//		kp= *(aRxBuffer + counter) - 48 + kp * 10;
-//		counter++;
-//	}
-//	counter++;
-//	float ki = 0;
-//	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
-//	{
-//		ki= *(aRxBuffer + counter) - 48 + ki * 10;
-//		counter++;
-//	}
-//	counter++;
-//	float kd = 0;
-//	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
-//	{
-//		kd= (*(aRxBuffer + counter) - 48)/10.0 + kd / 10.0;
-//		counter++;
-//	}
-//	sprintf(OLED_row0, "rec %d %d %d", (int)kp, (int)ki, (int)kd);
-//	setPID(kp,ki,kd);
+void receiveCommand(){
+	if(aRxBuffer[0] == 'f')
+		direction = 0;
+	else if(aRxBuffer[0] == 'b')
+		direction = 1;
+	else
+		direction = 0;
+
+	movement = aRxBuffer[1];
+	magnitude = 0;
+	for(int i=2; i<RxBUFFSIZE; i++){
+		magnitude = (aRxBuffer[i] - 48) + magnitude *10;
+	}
+	waitingForCommand = 0;
 }
 
 void printPIDdebug(int value1,int value2, int value3, int value4, long value5){
@@ -68,7 +58,6 @@ void printPIDdebug(int value1,int value2, int value3, int value4, long value5){
 	sprintf(aTxBuffer, "%5d,%5d,%5d,%5d,%5d", value1,value2,value3,value4,value5);
 	HAL_UART_Transmit(&huart3,aTxBuffer,TxBUFFSIZE,0xFFFF);
 }
-
 
 void printVelocity(int value1,int value2){
 	HAL_UART_Transmit(&huart3,"\r\n",2,0xFFFF);
@@ -80,6 +69,33 @@ void printgyro(double value1, int value2){
 	HAL_UART_Transmit(&huart3,"\r\n",2,0xFFFF);
 	sprintf(aTxBuffer, "%5.2d, %5d", value1,value2);
 	HAL_UART_Transmit(&huart3,aTxBuffer,7,0xFFFF);
+}
+
+void recievePID(){
+	//for receiving pid from serial
+	int8_t counter =0;
+	float kp = 0;
+	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
+	{
+		kp= *(aRxBuffer + counter) - 48 + kp * 10;
+		counter++;
+	}
+	counter++;
+	float ki = 0;
+	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
+	{
+		ki= *(aRxBuffer + counter) - 48 + ki * 10;
+		counter++;
+	}
+	counter++;
+	float kd = 0;
+	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
+	{
+		kd= (*(aRxBuffer + counter) - 48)/10.0 + kd / 10.0;
+		counter++;
+	}
+	sprintf(OLED_row5, "rec %d %d %d", (int)kp, (int)ki, (int)kd);
+	setPID(kp,ki,kd);
 }
 
 
