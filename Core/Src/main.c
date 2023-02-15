@@ -96,6 +96,8 @@ encoder_instance encoderC, encoderD;
 pid_instance motorCpid, motorDpid;
 mov_aver_intance encoderCma, encoderDma;
 
+pid_instance gyroPID;
+
 uint8_t waitingForCommand = 1;
 uint8_t direction = 0; //forward=1 or backward=0
 uint8_t movement = ' '; //l,r,s
@@ -795,8 +797,10 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
-	if(GPIO_Pin == User_Button_Pin && start == 0){
-		start = 1;
+	if(GPIO_Pin == User_Button_Pin){
+		if(start == 0)
+			start = 1;
+		totalAngle = 0;
 	}
 }
 
@@ -832,6 +836,8 @@ void StartDefaultTask(void *argument)
 	encoder_reset_counter(&encoderC, &htim4);
 	encoder_reset_counter(&encoderD, &htim2);
 
+	pid_reset(&gyroPID);
+
 	pidEnable = 1;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 
@@ -841,29 +847,30 @@ void StartDefaultTask(void *argument)
 
 	for (;;)
 	{
-//		if (start == 0)
-//		{
-//			osDelay(200);
-//			continue;
-//		}
-//		forward(1, 120);
-//		osDelay(2000);
-//		forward(0, 120);
-//		osDelay(5000);
+		if (start == 1)
+		{
+			//turnLeft(1, 360);
+			forward(1,120);
+			osDelay(5000);
+			forward(0,120);
+			osDelay(5000);
+			continue;
+		}
 
-		if(!waitingForCommand){
-			if(movement == 's'){
+		if(!isEmpty()){
+			if(!dequeue())//when return 0
+				continue;
+			if(movement == 'S'){
 				forward(direction, magnitude);
 			}
-			else if(movement == 'l'){
-				degree = (magnitude/1000.0) * (180.0/M_PI);
+			else if(movement == 'L'){
+				degree = magnitude/1000.0; //(magnitude/1000.0) * (180.0/M_PI);
 				turnLeft(direction, degree);
 			}
-			else if(movement == 'r'){
-				degree = (magnitude/1000.0) * (180.0/M_PI);
+			else if(movement == 'R'){
+				degree = magnitude/1000.0;
 				turnRight(direction, degree);
 			}
-			commandCompleted();
 		}
 		osDelay(10);
 
@@ -996,22 +1003,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//turning
 		if (isAngle)
 		{
+			int offset = 6;
 			if (htim1.Instance->CCR4 <= SERVO_CENTER){ // Turning Left
-				if(totalAngle >= targetAngle-3 && encoderC.direction == 1){
+				if(totalAngle >= targetAngle-offset && encoderC.direction == 1){
 					motorStop();
 					return;
 				}
-				if(totalAngle <= targetAngle+3 && encoderC.direction == 0){
+				if(totalAngle <= targetAngle+offset && encoderC.direction == 0){
 					motorStop();
 					return;
 				}
 			}
 			if (htim1.Instance->CCR4 >= SERVO_CENTER){ // Turning Right
-				if(totalAngle <= targetAngle+3 && encoderC.direction == 1){
+				if(totalAngle <= targetAngle+offset && encoderC.direction == 1){
 					motorStop();
 					return;
 				}
-				if(totalAngle >= targetAngle-3 && encoderC.direction == 0){
+				if(totalAngle >= targetAngle-offset && encoderC.direction == 0){
 					motorStop();
 					return;
 				}
@@ -1024,12 +1032,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				motorStop();
 			}
 			if(avgDist >= targetDistance-5){
-				setTarget(&motorCpid, 1);
-					setTarget(&motorDpid, 1);
+				setTarget(&motorCpid, 2);
+				setTarget(&motorDpid, 2);
 			}
 			else if(avgDist >= targetDistance-30){
 				setTarget(&motorCpid, 15);
-					setTarget(&motorDpid,15);
+				setTarget(&motorDpid,15);
 			}
 			sprintf(OLED_row1, "dist %d", avgDist);
 		}

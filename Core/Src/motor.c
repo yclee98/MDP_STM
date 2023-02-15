@@ -145,7 +145,7 @@ void motorStop(){
 	osDelay(50);
 }
 
-pid_instance gyroPID;
+extern pid_instance gyroPID;
 
 //1= forward, 0= reverse
 void forward(int dir, double dist)
@@ -159,7 +159,7 @@ void forward(int dir, double dist)
 	targetDistance = dist;
 	osDelay(1000);
 
-	pid_reset(&gyroPID);
+//	pid_reset(&gyroPID);
 
 	if (dist != 0){
 		motorStart();
@@ -190,13 +190,13 @@ void forward(int dir, double dist)
 			calPWM = 249;
 		if(calPWM < 99)
 			calPWM = 99;
-//		printVelocity(calPWM, 0);
+		//printVelocity(calPWM, 147);
 
 		htim1.Instance->CCR4 = calPWM;
 
 		sprintf(OLED_row4, "servo %d", calPWM);
 
-		osDelay(50);
+		osDelay(5);
 	}
 
 
@@ -218,8 +218,8 @@ void turnLeft(int dir, double angle)
 {
 	if(angle > 360 || angle <= 0)
 		return;
-	setTarget(&motorDpid, 10.0);
-	setTarget(&motorCpid, 10.0*0.4846855213416525);
+	setTarget(&motorDpid, 15.0);
+	setTarget(&motorCpid, 15.0*0.509257627); //4846855213416525
 	htim1.Instance->CCR4 = 99;
 	setDirection(dir, 0);
 	osDelay(500);
@@ -248,8 +248,8 @@ void turnRight(int dir, double angle)
 	if(angle > 360 || angle < 0)
 			return;
 
-	setTarget(&motorDpid, 10.0*0.505463828125);
-	setTarget(&motorCpid, 10.0);
+	setTarget(&motorDpid, 15.0*0.50698134765625); //0.505463828125
+	setTarget(&motorCpid, 15.0);
 
 	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);

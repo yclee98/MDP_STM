@@ -51,9 +51,9 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 //	osDelay(50);
 }
 
-float kp1 = 0.5;
-float ki1 = 0.000001;
-float kd1 = 500;
+float kp1 = 1; //0.5
+float ki1 = 0.0000001; //0.000001
+float kd1 = 250; //500
 
 void apply_pid1(pid_instance *m, int16_t measuredGyro){
 
