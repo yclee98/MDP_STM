@@ -150,6 +150,8 @@ pid_instance gyroPID;
 //1= forward, 0= reverse
 void forward(int dir, double dist)
 {
+	if(dist <=0 && dist > 300)
+		return;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
 	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
@@ -214,6 +216,8 @@ int addAngle(double angle){
 
 void turnLeft(int dir, double angle)
 {
+	if(angle > 360 || angle <= 0)
+		return;
 	setTarget(&motorDpid, 10.0);
 	setTarget(&motorCpid, 10.0*0.4846855213416525);
 	htim1.Instance->CCR4 = 99;
@@ -241,6 +245,9 @@ void turnLeft(int dir, double angle)
 
 void turnRight(int dir, double angle)
 {
+	if(angle > 360 || angle < 0)
+			return;
+
 	setTarget(&motorDpid, 10.0*0.505463828125);
 	setTarget(&motorCpid, 10.0);
 

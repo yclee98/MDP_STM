@@ -841,11 +841,15 @@ void StartDefaultTask(void *argument)
 
 	for (;;)
 	{
-		if (start == 0)
-		{
-			osDelay(200);
-			continue;
-		}
+//		if (start == 0)
+//		{
+//			osDelay(200);
+//			continue;
+//		}
+//		forward(1, 120);
+//		osDelay(2000);
+//		forward(0, 120);
+//		osDelay(5000);
 
 		if(!waitingForCommand){
 			if(movement == 's'){

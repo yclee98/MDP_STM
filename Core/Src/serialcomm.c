@@ -25,7 +25,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	//Prevent unused arguments compilation warning
 	UNUSED(huart);
-	sprintf(OLED_row5, "rec %s", aRxBuffer);
+	sprintf(OLED_row5, "act %s", aRxBuffer);
 
 	receiveCommand();
 }
@@ -33,17 +33,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void commandCompleted(){
 	waitingForCommand = 1;
 	sprintf(aTxBuffer, "reached");
+	sprintf(OLED_row5, "act %s", aTxBuffer);
 	HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
 	HAL_UART_Receive_IT(&huart3,(uint8_t *)aRxBuffer,RxBUFFSIZE); //receive next set of command
 }
 
 void receiveCommand(){
 	if(aRxBuffer[0] == 'f')
-		direction = 0;
-	else if(aRxBuffer[0] == 'b')
 		direction = 1;
-	else
+	else if(aRxBuffer[0] == 'b')
 		direction = 0;
+	else
+		return;
 
 	movement = aRxBuffer[1];
 	magnitude = 0;
