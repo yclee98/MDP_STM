@@ -111,11 +111,12 @@ void setMotorDPWM(){
 }
 
 void motorStart(){
+	__disable_irq();
 	isMoving = 1;
 
 	if(pidEnable == 0){
-		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 2000);
-		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 2000);
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 5000);
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, 5000);
 	}
 
 	//for checking when to stop interrupt
@@ -125,6 +126,8 @@ void motorStart(){
 	HAL_TIM_Base_Start_IT(&htim6); //motorD
 	HAL_TIM_Base_Start_IT(&htim7); //motorC
 
+
+	__enable_irq();
 }
 
 void motorStop(){
@@ -154,8 +157,8 @@ void forward(int dir, double dist)
 		return;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
-	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
-	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
+//	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
+//	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
 	targetDistance = dist;
 	osDelay(1000);
 
@@ -196,7 +199,7 @@ void forward(int dir, double dist)
 
 		sprintf(OLED_row4, "servo %d", calPWM);
 
-		osDelay(5);
+		osDelay(50);
 	}
 
 

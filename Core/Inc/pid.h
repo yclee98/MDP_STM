@@ -17,6 +17,6 @@ void setPID(float p, float i, float d);
 void apply_pid(pid_instance *m, int16_t measuredVelocity);
 void pid_reset(pid_instance *m);
 
-void apply_pid1(pid_instance *m, int16_t measuredGyro);
+void apply_pid1(pid_instance *m, double measuredGyro);
 
 #endif /* INC_PID_H_ */

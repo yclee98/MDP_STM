@@ -44,7 +44,7 @@ void update_encoder(encoder_instance *e, TIM_HandleTypeDef *htim){
 }
 
 void encoder_reset_counter(encoder_instance *e, TIM_HandleTypeDef *htim){
-	e->lastCounterValue = __HAL_TIM_GET_COUNTER(htim);;
+	e->lastCounterValue = __HAL_TIM_GET_COUNTER(htim);
 }
 
 void encoder_reset(encoder_instance *e){

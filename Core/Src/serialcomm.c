@@ -36,11 +36,11 @@ int enqueue(){
 
 	actionBuffer[frontCounter][RxBUFFSIZE] = '\0';
 
+	sprintf(OLED_row5, "en %s", actionBuffer[frontCounter]);
+
 	if(strcmp(actionBuffer[frontCounter], "END00000\0") ==0){
 		waitingForCommand = 0;
 	}
-
-	sprintf(OLED_row5, "en %s", actionBuffer[frontCounter]);
 
 	queueSize++;
 	frontCounter++;

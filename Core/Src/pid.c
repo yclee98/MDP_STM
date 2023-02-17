@@ -2,20 +2,12 @@
 
 #define PID_MAX 7000
 
-#define SAMPLING_RATE 5000 //5ms
+#define SAMPLING_RATE 200.0 //5ms
 
 //need to adjust servomultiplier when changing speed
 extern int16_t MOTOR_VELOCITY_REF;
 
-float kp = 50;
-float ki = 0.0005;
-float kd = 200;
-
-void setPID(float p, float i, float d){
-	kp = p;
-	ki = i;
-	kd = d;
-}
+extern uint8_t OLED_row5[20];
 
 //void setSpeed(int16_t speed){
 //	MOTOR_VELOCITY_REF = speed;
@@ -26,16 +18,21 @@ void setTarget(pid_instance *m, double target){
 }
 
 
+float kp = 120;
+float ki = 0.0010;
+float kd = 0;
+float motorSamplingRate = 200.0; //1/200=5ms == 0.005s
+
 void apply_pid(pid_instance *m, int16_t measuredVelocity){
 //	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
 	double inputError = m->target - measuredVelocity;
 
-	m->errorIntegral += inputError * SAMPLING_RATE;
+	m->errorIntegral += inputError * motorSamplingRate;
 
 	double errorChange = inputError - m->lastError;
 	m->lastError = inputError;
 
-	double errorRate = errorChange / SAMPLING_RATE;
+	double errorRate = errorChange / motorSamplingRate;
 
 	m->output =
 			kp * inputError +
@@ -47,35 +44,37 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 	else if(m->output <= -PID_MAX)
 		m->output = -PID_MAX;
 
+//	sprintf(OLED_row5, "err %d", (int)m->errorIntegral);
 
-//	osDelay(50);
 }
 
-float kp1 = 1; //0.5
-float ki1 = 0.0000001; //0.000001
-float kd1 = 250; //500
+void setPID(float p, float i, float d){
+	kp = p;
+	ki = i;
+	kd = d;
+}
 
-void apply_pid1(pid_instance *m, int16_t measuredGyro){
+float kp1 = 2; //0.5
+double ki1 = 0.0001; //0.000001
+float kd1 = 0; //500
+float gyroSamplingRate = 200.0;
+
+void apply_pid1(pid_instance *m, double measuredGyro){
 
 	int32_t inputError = 0 - measuredGyro;
-	m->errorIntegral += inputError * SAMPLING_RATE;
+	m->errorIntegral += inputError * gyroSamplingRate;
 
-	int32_t errorChange = inputError - m->lastError;
+	double errorChange = inputError - m->lastError;
 	m->lastError = inputError;
 
-	int32_t errorRate = errorChange / SAMPLING_RATE;
+	double errorRate = errorChange / gyroSamplingRate;
 
 	m->output =
 			kp1 * inputError +
 			ki1 * m->errorIntegral +
 			kd1 * errorRate;
 
-//	if(m->output >= 200)
-//		m->output = 200;
-//	else if(m->output <= 100)
-//		m->output = 100;
-
-//	osDelay(50);
+	sprintf(OLED_row5, "errg %d", (long)m->errorIntegral);
 }
 
 
