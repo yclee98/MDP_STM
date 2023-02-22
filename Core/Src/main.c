@@ -858,7 +858,7 @@ void StartDefaultTask(void *argument)
 			osDelay(1000);
 			forward(0,120);
 			osDelay(2000);
-			//right/left radius = 68
+			//right/left
 			//turnLeft(1, 360);
 //			forward(1,20);
 			//osDelay(1000);
@@ -876,7 +876,7 @@ void StartDefaultTask(void *argument)
 				forward(direction, magnitude);
 			}
 			else if(movement == 'L'){
-				degree = magnitude/1000.0; //(magnitude/1000.0) * (180.0/M_PI);
+				degree = magnitude/1000.0;
 				turnLeft(direction, degree);
 			}
 			else if(movement == 'R'){
@@ -885,17 +885,6 @@ void StartDefaultTask(void *argument)
 			}
 		}
 		osDelay(10);
-
-		//		forward(1,120);
-		//		turnLeft(1, 360);
-		//		osDelay(5000);
-		//		turnRight(0, 90);
-		//		osDelay(5000);
-		//		turnLeft(1, 90);
-		//		osDelay(5000);
-		//		turnLeft(0, 90);
-		//		osDelay(5000);
-		//		osDelay(5000);
 	}
 
 	/* USER CODE END 5 */
@@ -1023,14 +1012,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		else if(targetDistance != 0){
 			int avgDist = (encoderC.distance+encoderD.distance)/2;
 			if(avgDist >= targetDistance){
-				//				htim2.Instance->CNT = 0;
-				//				htim4.Instance->CNT = 0;
-				//				encoderC.lastCounterValue = 0;
-				//				encoderD.lastCounterValue = 0;
-				//				motorCpid.lastError = 0;
-				//				motorDpid.lastError = 0;
-				//				motorCpid.output = 0;
-				//				motorDpid.output = 0;
 				motorStop();
 			}
 			if(avgDist >= targetDistance-5){

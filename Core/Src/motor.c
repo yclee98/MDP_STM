@@ -181,7 +181,7 @@ void forward(int dir, double dist)
 //		else
 //			calPWM = SERVO_CENTER;
 
-		apply_pid1(&gyroPID, totalAngle);
+		apply_pid_gyro(&gyroPID, totalAngle);
 
 		if(dir == 1){
 			calPWM = (int)(SERVO_CENTER - gyroPID.output);

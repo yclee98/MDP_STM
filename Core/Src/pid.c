@@ -9,10 +9,6 @@ extern int16_t MOTOR_VELOCITY_REF;
 
 extern uint8_t OLED_row5[20];
 
-//void setSpeed(int16_t speed){
-//	MOTOR_VELOCITY_REF = speed;
-//}
-
 void setTarget(pid_instance *m, double target){
 	m->target = target;
 }
@@ -59,8 +55,7 @@ double ki1 = 0.0001; //0.000001
 float kd1 = 0; //500
 float gyroSamplingRate = 200.0;
 
-void apply_pid1(pid_instance *m, double measuredGyro){
-
+void apply_pid_gyro(pid_instance *m, double measuredGyro){
 	int32_t inputError = 0 - measuredGyro;
 	m->errorIntegral += inputError * gyroSamplingRate;
 
@@ -74,7 +69,7 @@ void apply_pid1(pid_instance *m, double measuredGyro){
 			ki1 * m->errorIntegral +
 			kd1 * errorRate;
 
-	sprintf(OLED_row5, "errg %d", (long)m->errorIntegral);
+//	sprintf(OLED_row5, "errg %d", (long)m->errorIntegral);
 }
 
 
