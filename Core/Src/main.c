@@ -854,18 +854,8 @@ void StartDefaultTask(void *argument)
 	{
 		if (start == 1)
 		{
-			forward(1,120);
-			osDelay(1000);
-			forward(0,120);
-			osDelay(2000);
-			//right/left
-			//turnLeft(1, 360);
-//			forward(1,20);
-			//osDelay(1000);
-//			forward(0,40);
-//			turnRight(1,90);
-//			turnLeft(1,180);
-//			osDelay(6000);
+			turnRight(1,180);
+			osDelay(5000);
 			continue;
 		}
 
@@ -986,7 +976,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//turning
 		if (isAngle)
 		{
-			int offset = 6;
+			int offset = 4;
 			if (htim1.Instance->CCR4 <= SERVO_CENTER){ // Turning Left
 				if(totalAngle >= targetAngle-offset && encoderC.direction == 1){
 					motorStop();

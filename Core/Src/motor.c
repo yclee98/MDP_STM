@@ -217,7 +217,7 @@ int addAngle(double angle){
 	return angle;
 }
 
-void turnLeft(int dir, double angle)
+void turnLeft(int dir, double angle) //radius = 24.5
 {
 	if(angle > 360 || angle <= 0)
 		return;
@@ -246,13 +246,14 @@ void turnLeft(int dir, double angle)
 	isAngle = 0;
 }
 
-void turnRight(int dir, double angle)
+void turnRight(int dir, double angle) //radius = 24.3
 {
 	if(angle > 360 || angle < 0)
 			return;
 
-	setTarget(&motorDpid, 15.0*0.50698134765625); //0.505463828125
+	setTarget(&motorDpid, 15.0*0.596); //0.505463828125
 	setTarget(&motorCpid, 15.0);
+
 
 	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);
