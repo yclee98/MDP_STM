@@ -89,8 +89,8 @@ int16_t servoMultiplier = 4;
 double fullRotationWheel = 1580;
 double circumferenceWheel = 21.3;
 volatile double totalAngle =0;
-int targetAngle = 0;
-int targetDistance = 0;
+double targetAngle = 0;
+double targetDistance = 0;
 
 encoder_instance encoderC, encoderD;
 pid_instance motorCpid, motorDpid;
@@ -798,8 +798,9 @@ static void MX_GPIO_Init(void)
 
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 	if(GPIO_Pin == User_Button_Pin){
-		if(start == 0)
+		if(start == 0){
 			start = 1;
+		}
 		totalAngle = 0;
 	}
 }
@@ -846,16 +847,14 @@ void StartDefaultTask(void *argument)
 	pidEnable = 1;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 
-	double degree=0;
-
 	//	HAL_TIM_Base_Start_IT(&htim13);
 
 	for (;;)
 	{
 		if (start == 1)
 		{
-			turnRight(1,180);
-			osDelay(5000);
+//			startQueue();
+			start=0;
 			continue;
 		}
 
@@ -863,15 +862,13 @@ void StartDefaultTask(void *argument)
 			if(!dequeue())//when return 0
 				continue;
 			if(movement == 'S'){
-				forward(direction, magnitude);
+				forward(direction, magnitude/1000.0);
 			}
 			else if(movement == 'L'){
-				degree = magnitude/1000.0;
-				turnLeft(direction, degree);
+				turnLeft(direction, magnitude/1000.0);
 			}
 			else if(movement == 'R'){
-				degree = magnitude/1000.0;
-				turnRight(direction, degree);
+				turnRight(direction, magnitude/1000.0);
 			}
 		}
 		osDelay(10);
@@ -1000,7 +997,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 		//moving straight/reverse
 		else if(targetDistance != 0){
-			int avgDist = (encoderC.distance+encoderD.distance)/2;
+			double avgDist = (encoderC.distance+encoderD.distance)/2.0;
 			if(avgDist >= targetDistance){
 				motorStop();
 			}
@@ -1024,7 +1021,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				setTarget(&motorCpid, 25);
 				setTarget(&motorDpid, 25);
 			}
-			sprintf(OLED_row1, "dist %d", avgDist);
+			sprintf(OLED_row1, "dist %d", (int)avgDist);
 		}
 		return;
 	}

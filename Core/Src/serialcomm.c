@@ -6,7 +6,7 @@ extern uint8_t OLED_row5[20];
 
 #define TxBUFFSIZE 35
 #define RxBUFFSIZE 8
-#define QUEUESIZE 16
+#define QUEUESIZE 20
 
 uint8_t aTxBuffer[TxBUFFSIZE];
 uint8_t aRxBuffer[RxBUFFSIZE];
@@ -18,13 +18,24 @@ extern uint8_t direction; //forward=1 or backward=0
 extern uint8_t movement; //turn left/right or straight
 extern uint32_t magnitude;
 
-
-
 uint8_t actionBuffer[QUEUESIZE][RxBUFFSIZE+1];
 int frontCounter = 0;
 int backCounter = 0;
 int queueSize = 0;
 
+void startQueue(){
+	char * actionsList[] ={
+		"BS025000", "FR079667", "FS014000", "FL169667","END00000"
+	};
+
+	for(int i=0; i<sizeof(actionsList)/sizeof(char*); i++){
+		for(int j=0; j<8;j++){
+			aRxBuffer[j] = actionsList[i][j];
+		}
+		enqueue();
+	}
+}
+//BS020000FL090000FS008000FR180000BS030000END00000
 int enqueue(){
 	frontCounter = frontCounter %  QUEUESIZE;
 	if(queueSize >= QUEUESIZE)
@@ -36,9 +47,10 @@ int enqueue(){
 
 	actionBuffer[frontCounter][RxBUFFSIZE] = '\0';
 
-	sprintf(OLED_row5, "en %s", actionBuffer[frontCounter]);
-
-	if(strcmp(actionBuffer[frontCounter], "END00000\0") ==0){
+	sprintf(OLED_row5, "en %d %s", queueSize, actionBuffer[frontCounter]);
+	//when receive END00000 need to reply with STOP0000
+	//when receive END00001, no need to reply with STOP0000
+	if(strcmp(actionBuffer[frontCounter], "END00000\0") ==0 || strcmp(actionBuffer[frontCounter], "END00001\0") ==0){
 		waitingForCommand = 0;
 	}
 
@@ -52,7 +64,7 @@ int dequeue(){
 	if(queueSize <= 0)
 		return 0;
 
-	sprintf(OLED_row5, "deq %s", actionBuffer[backCounter]);
+	sprintf(OLED_row5, "deq %d %s", queueSize, actionBuffer[backCounter]);
 
 	//check if end of action
 	if(strcmp(actionBuffer[backCounter], "END00000\0") ==0){
@@ -61,6 +73,13 @@ int dequeue(){
 		backCounter++;
 		sprintf(aTxBuffer, "STOP0000");
 		HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
+		return 0;
+	}
+
+	if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
+		waitingForCommand = 1;
+		queueSize--;
+		backCounter++;
 		return 0;
 	}
 

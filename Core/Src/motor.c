@@ -19,8 +19,8 @@ extern uint8_t isMoving;
 extern uint8_t isAngle;
 
 extern double totalAngle;
-extern int targetAngle;
-extern int targetDistance;
+extern double targetAngle;
+extern double targetDistance;
 
 extern uint8_t OLED_row1[20], OLED_row4[20];
 
