@@ -1060,7 +1060,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		apply_average_filter(&encoderCma, encoderC.velocity);
 		apply_pid(&motorCpid, encoderCma.out);
 
-		setMotorCPWM();
+//		setMotorCPWM();
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
 
 		//sprintf(OLED_row4, "pwmC %d", motorCpid.output);
 		//printVelocity(encoderC.velocity,encoderD.velocity);
@@ -1076,7 +1077,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		apply_average_filter(&encoderDma, encoderD.velocity);
 		apply_pid(&motorDpid, encoderDma.out);
 
-		setMotorDPWM();
+//		setMotorDPWM();
+		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
 
 		//sprintf(OLED_row5, "pwmD %d", motorDpid.output);
 		//printVelocity(encoderC.velocity,encoderD.velocity);
