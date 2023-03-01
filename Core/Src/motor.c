@@ -31,39 +31,39 @@ void setDirection(int dir, int motor)
 	if (dir){// move forward
 		if (motor == 1) // C
 		{
-			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_RESET); // set direction of rotation for wheel D- forward
-			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_RESET);
 		}
 		else if (motor == 2) // D
 		{
-			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- forward
-			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_SET);
 		}
 		else
 		{
-			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_RESET); // set direction of rotation for wheel D- forward
-			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- forward
-			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_SET);
 		}
 	}
 	else{ // reverse
 		if (motor == 1) // C
 		{
-			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- reverse
-			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_SET);
 		}
 		else if (motor == 2) // D
 		{
-			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_RESET); // set direction of rotation for wheel D- reverse
-			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_RESET);
 		}
 		else
 		{
-			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_SET); // set direction of rotation for wheel D- reverse
-			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_RESET); // set direction of rotation for wheel D- reverse
-			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOE, CIN1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOC, CIN2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOB, DIN1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOB, DIN2_Pin, GPIO_PIN_RESET);
 		}
 	}
 	encoderC.direction = dir;
