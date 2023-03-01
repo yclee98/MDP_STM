@@ -207,8 +207,8 @@ void turnLeft(int dir, double angle) //radius = 24.5
 	if(angle > 360 || angle <= 0)
 		return;
 
-	setTarget(&motorDpid, TURNING_MAX_SPEED);
-	setTarget(&motorCpid, TURNING_MAX_SPEED*0.509257627); //4846855213416525
+	setTarget(&motorCpid, TURNING_MAX_SPEED);
+	setTarget(&motorDpid, TURNING_MAX_SPEED*0.509257627); //4846855213416525
 
 	htim1.Instance->CCR4 = 99;
 	setDirection(dir, 0);
@@ -239,8 +239,8 @@ void turnRight(int dir, double angle) //radius = 24.3
 	if(angle > 360 || angle < 0)
 			return;
 
-	setTarget(&motorDpid, TURNING_MAX_SPEED*0.596); //0.505463828125
-	setTarget(&motorCpid, TURNING_MAX_SPEED);
+	setTarget(&motorCpid, TURNING_MAX_SPEED*0.596); //0.505463828125
+	setTarget(&motorDpid, TURNING_MAX_SPEED);
 
 
 	htim1.Instance->CCR4 = 249;

@@ -1,6 +1,6 @@
 #include "pid.h"
 
-#define PID_MAX 7000
+#define PID_MAX 6000
 
 extern uint8_t OLED_row5[20];
 
@@ -30,8 +30,8 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 
 	if(m->output >= PID_MAX)
 		m->output = PID_MAX;
-	else if(m->output <= -PID_MAX)
-		m->output = -PID_MAX;
+	else if(m->output <=400)
+		m->output = 400;
 
 //	sprintf(OLED_row5, "err %d", (int)m->errorIntegral);
 
