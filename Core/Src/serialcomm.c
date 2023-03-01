@@ -5,7 +5,7 @@ extern UART_HandleTypeDef huart3;
 extern uint8_t OLED_row5[20];
 
 #define TxBUFFSIZE 35
-#define RxBUFFSIZE 8
+#define RxBUFFSIZE 10
 #define QUEUESIZE 20
 
 uint8_t aTxBuffer[TxBUFFSIZE];
@@ -118,7 +118,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	//Prevent unused arguments compilation warning
 	UNUSED(huart);
-	enqueue();
+//	enqueue();
+	receivePID();
 	HAL_UART_Receive_IT(&huart3,(uint8_t *)aRxBuffer,RxBUFFSIZE); //receive next set of command
 
 }
@@ -142,7 +143,11 @@ void printgyro(double value1, int value2){
 	HAL_UART_Transmit(&huart3,aTxBuffer,7,0xFFFF);
 }
 
-void recievePID(){
+extern float KP_MOTOR;
+extern double KI_MOTOR;
+extern float KD_MOTOR;
+
+void receivePID(){
 	//for receiving pid from serial
 	int8_t counter =0;
 	float kp = 0;
@@ -162,11 +167,13 @@ void recievePID(){
 	float kd = 0;
 	while(*(aRxBuffer + counter) != 32 && counter < RxBUFFSIZE)
 	{
-		kd= (*(aRxBuffer + counter) - 48)/10.0 + kd / 10.0;
+		kd= *(aRxBuffer + counter) - 48 + kd * 10;
 		counter++;
 	}
 	sprintf(OLED_row5, "rec %d %d %d", (int)kp, (int)ki, (int)kd);
-	//setPID(kp,ki,kd);
+	KP_MOTOR = kp;
+	KI_MOTOR = ki;
+	KD_MOTOR = kd;
 }
 
 

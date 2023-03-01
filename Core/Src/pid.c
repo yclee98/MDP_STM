@@ -14,28 +14,47 @@ extern float KD_MOTOR;
 float motorSamplingRate = 200.0; //1/200=5ms == 0.005s
 
 void apply_pid(pid_instance *m, int16_t measuredVelocity){
-	double inputError = m->target - measuredVelocity;
-
-	m->errorIntegral += inputError * motorSamplingRate;
-
-	double errorChange = inputError - m->lastError;
-	m->lastError = inputError;
-
-	double errorRate = errorChange / motorSamplingRate;
+	int32_t inputError = m->target - measuredVelocity;
+	m->errorIntegral += inputError;
 
 	m->output =
 			KP_MOTOR * inputError +
-			KI_MOTOR * m->errorIntegral +
-			KD_MOTOR * errorRate;
+			KI_MOTOR * (m->errorIntegral)/motorSamplingRate +
+			KD_MOTOR * (inputError-m->lastError)* motorSamplingRate;
 
 	if(m->output >= PID_MAX)
 		m->output = PID_MAX;
-	else if(m->output <=400)
+	else if(m->output <= 400)
 		m->output = 400;
 
-//	sprintf(OLED_row5, "err %d", (int)m->errorIntegral);
-
+	m->lastError = inputError;
+	osDelay(50);
 }
+
+
+//void apply_pid(pid_instance *m, int16_t measuredVelocity){
+//	double inputError = m->target - measuredVelocity;
+//
+//	m->errorIntegral += inputError * motorSamplingRate;
+//
+//	double errorChange = inputError - m->lastError;
+//	m->lastError = inputError;
+//
+//	double errorRate = errorChange / motorSamplingRate;
+//
+//	m->output =
+//			KP_MOTOR * inputError +
+//			KI_MOTOR * m->errorIntegral +
+//			KD_MOTOR * errorRate;
+//
+//	if(m->output >= PID_MAX)
+//		m->output = PID_MAX;
+//	else if(m->output <=400)
+//		m->output = 400;
+//
+////	sprintf(OLED_row5, "err %d", (int)m->errorIntegral);
+//
+//}
 
 extern float KP_SERVO;
 extern double KI_SERVO;
@@ -67,25 +86,4 @@ void pid_reset(pid_instance *m){
 	m->target = 0;
 }
 
-//void apply_pid1(pid_instance *m, int16_t measuredVelocity)
-//	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
-//	m->errorIntegral += inputError;
-//
-//	if(m->errorIntegral > INTEGRAL_GAIN_MAX)
-//		m->errorIntegral = INTEGRAL_GAIN_MAX;
-//	else if(m->errorIntegral < -INTEGRAL_GAIN_MAX)
-//		m->errorIntegral = -INTEGRAL_GAIN_MAX;
-//
-//	m->output =
-//			kp * inputError +
-//			ki * (m->errorIntegral)/SAMPLING_RATE +
-//			kd * (inputError-m->lastError)* SAMPLING_RATE;
-//
-//	if(m->output >= PID_MAX)
-//		m->output = PID_MAX;
-//	else if(m->output <= -PID_MAX)
-//		m->output = -PID_MAX;
-//
-//	m->lastError = inputError;
-//	osDelay(50);
-//}
+

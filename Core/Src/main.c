@@ -102,8 +102,8 @@ uint8_t movement = ' '; //l,r,s
 uint32_t magnitude = 0;
 
 //indoor setting
-float KP_MOTOR = 120;
-double KI_MOTOR = 0.001;
+float KP_MOTOR = 450;
+double KI_MOTOR = 100;
 float KD_MOTOR = 0;
 
 float KP_SERVO = 2;
@@ -1064,7 +1064,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
 
 		//sprintf(OLED_row4, "pwmC %d", motorCpid.output);
-		//printVelocity(encoderC.velocity,encoderD.velocity);
+		printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
 	}
 	if(htim==&htim6 && isMoving){
@@ -1081,7 +1081,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
 
 		//sprintf(OLED_row5, "pwmD %d", motorDpid.output);
-		//printVelocity(encoderC.velocity,encoderD.velocity);
+		printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
 	}
 
