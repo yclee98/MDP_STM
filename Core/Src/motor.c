@@ -3,16 +3,16 @@
 extern TIM_HandleTypeDef htim1; //servo
 extern TIM_HandleTypeDef htim8; //motor
 
-
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim10;
 
 extern encoder_instance encoderC, encoderD;
 extern pid_instance motorCpid, motorDpid;
+extern pid_instance gyroPID;
 
 extern uint16_t SERVO_CENTER;
-extern int16_t servoMultiplier;
+extern int TURNING_MAX_SPEED;
 
 extern uint8_t pidEnable;
 extern uint8_t isMoving;
@@ -148,8 +148,6 @@ void motorStop(){
 	osDelay(50);
 }
 
-extern pid_instance gyroPID;
-
 //1= forward, 0= reverse
 void forward(int dir, double dist)
 {
@@ -161,8 +159,6 @@ void forward(int dir, double dist)
 //	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
 	targetDistance = dist;
 	osDelay(1000);
-
-//	pid_reset(&gyroPID);
 
 	if (dist != 0){
 		motorStart();
@@ -181,7 +177,7 @@ void forward(int dir, double dist)
 //		else
 //			calPWM = SERVO_CENTER;
 
-		apply_pid_gyro(&gyroPID, totalAngle);
+		apply_pid_servo(&gyroPID, totalAngle);
 
 		if(dir == 1){
 			calPWM = (int)(SERVO_CENTER - gyroPID.output);
@@ -206,28 +202,20 @@ void forward(int dir, double dist)
 	osDelay(50);
 }
 
-int addAngle(double angle){
-	angle += totalAngle;
-
-	if(angle >= 360)
-		angle -=360;
-	if(angle <= -360)
-		angle +=360;
-
-	return angle;
-}
-
 void turnLeft(int dir, double angle) //radius = 24.5
 {
 	if(angle > 360 || angle <= 0)
 		return;
-	setTarget(&motorDpid, 15.0);
-	setTarget(&motorCpid, 15.0*0.509257627); //4846855213416525
+
+	setTarget(&motorDpid, TURNING_MAX_SPEED);
+	setTarget(&motorCpid, TURNING_MAX_SPEED*0.509257627); //4846855213416525
+
 	htim1.Instance->CCR4 = 99;
 	setDirection(dir, 0);
 	osDelay(500);
 
 	isAngle = 1;
+
 	if(dir)
 		targetAngle = angle;
 	else
@@ -251,13 +239,14 @@ void turnRight(int dir, double angle) //radius = 24.3
 	if(angle > 360 || angle < 0)
 			return;
 
-	setTarget(&motorDpid, 15.0*0.596); //0.505463828125
-	setTarget(&motorCpid, 15.0);
+	setTarget(&motorDpid, TURNING_MAX_SPEED*0.596); //0.505463828125
+	setTarget(&motorCpid, TURNING_MAX_SPEED);
 
 
 	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);
 	osDelay(500);
+
 	isAngle = 1;
 
 	if(dir)

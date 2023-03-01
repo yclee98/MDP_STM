@@ -47,7 +47,7 @@ int enqueue(){
 
 	actionBuffer[frontCounter][RxBUFFSIZE] = '\0';
 
-	sprintf(OLED_row5, "en %d %s", queueSize, actionBuffer[frontCounter]);
+	sprintf(OLED_row5, "en %s", actionBuffer[frontCounter]);
 	//when receive END00000 need to reply with STOP0000
 	//when receive END00001, no need to reply with STOP0000
 	if(strcmp(actionBuffer[frontCounter], "END00000\0") ==0 || strcmp(actionBuffer[frontCounter], "END00001\0") ==0){
@@ -75,8 +75,7 @@ int dequeue(){
 		HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
 		return 0;
 	}
-
-	if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
+	else if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
 		waitingForCommand = 1;
 		queueSize--;
 		backCounter++;
@@ -119,9 +118,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	//Prevent unused arguments compilation warning
 	UNUSED(huart);
-
-	HAL_UART_Receive_IT(&huart3,(uint8_t *)aRxBuffer,RxBUFFSIZE); //receive next set of command
 	enqueue();
+	HAL_UART_Receive_IT(&huart3,(uint8_t *)aRxBuffer,RxBUFFSIZE); //receive next set of command
+
 }
 
 
@@ -167,7 +166,7 @@ void recievePID(){
 		counter++;
 	}
 	sprintf(OLED_row5, "rec %d %d %d", (int)kp, (int)ki, (int)kd);
-	setPID(kp,ki,kd);
+	//setPID(kp,ki,kd);
 }
 
 

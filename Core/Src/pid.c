@@ -2,25 +2,18 @@
 
 #define PID_MAX 7000
 
-#define SAMPLING_RATE 200.0 //5ms
-
-//need to adjust servomultiplier when changing speed
-extern int16_t MOTOR_VELOCITY_REF;
-
 extern uint8_t OLED_row5[20];
 
 void setTarget(pid_instance *m, double target){
 	m->target = target;
 }
 
-
-float kp = 120;
-float ki = 0.0010;
-float kd = 0;
+extern float KP_MOTOR;
+extern double KI_MOTOR;
+extern float KD_MOTOR;
 float motorSamplingRate = 200.0; //1/200=5ms == 0.005s
 
 void apply_pid(pid_instance *m, int16_t measuredVelocity){
-//	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;
 	double inputError = m->target - measuredVelocity;
 
 	m->errorIntegral += inputError * motorSamplingRate;
@@ -31,9 +24,9 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 	double errorRate = errorChange / motorSamplingRate;
 
 	m->output =
-			kp * inputError +
-			ki * m->errorIntegral +
-			kd * errorRate;
+			KP_MOTOR * inputError +
+			KI_MOTOR * m->errorIntegral +
+			KD_MOTOR * errorRate;
 
 	if(m->output >= PID_MAX)
 		m->output = PID_MAX;
@@ -44,18 +37,12 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 
 }
 
-void setPID(float p, float i, float d){
-	kp = p;
-	ki = i;
-	kd = d;
-}
-
-float kp1 = 2; //0.5
-double ki1 = 0.0001; //0.000001
-float kd1 = 0; //500
+extern float KP_SERVO;
+extern double KI_SERVO;
+extern float KD_SERVO;
 float gyroSamplingRate = 200.0;
 
-void apply_pid_gyro(pid_instance *m, double measuredGyro){
+void apply_pid_servo(pid_instance *m, double measuredGyro){
 	int32_t inputError = 0 - measuredGyro;
 	m->errorIntegral += inputError * gyroSamplingRate;
 
@@ -65,9 +52,9 @@ void apply_pid_gyro(pid_instance *m, double measuredGyro){
 	double errorRate = errorChange / gyroSamplingRate;
 
 	m->output =
-			kp1 * inputError +
-			ki1 * m->errorIntegral +
-			kd1 * errorRate;
+			KP_SERVO * inputError +
+			KI_SERVO * m->errorIntegral +
+			KD_SERVO * errorRate;
 
 //	sprintf(OLED_row5, "errg %d", (long)m->errorIntegral);
 }
@@ -79,10 +66,6 @@ void pid_reset(pid_instance *m){
 	m->output = 0;
 	m->target = 0;
 }
-
-
-
-
 
 //void apply_pid1(pid_instance *m, int16_t measuredVelocity)
 //	int32_t inputError = MOTOR_VELOCITY_REF - measuredVelocity;

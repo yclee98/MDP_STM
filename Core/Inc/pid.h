@@ -12,7 +12,6 @@ typedef struct{
 }pid_instance;
 
 void setTarget(pid_instance *m, double target);
-void setPID(float p, float i, float d);
 void apply_pid(pid_instance *m, int16_t measuredVelocity);
 void pid_reset(pid_instance *m);
 

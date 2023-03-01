@@ -84,8 +84,6 @@ volatile uint8_t isMoving = 0;
 volatile uint8_t isAngle = 0;
 uint8_t pidEnable = 1;
 uint16_t SERVO_CENTER = 149;
-int16_t MOTOR_VELOCITY_REF = 10;
-int16_t servoMultiplier = 4;
 double fullRotationWheel = 1580;
 double circumferenceWheel = 21.3;
 volatile double totalAngle =0;
@@ -103,7 +101,32 @@ uint8_t direction = 0; //forward=1 or backward=0
 uint8_t movement = ' '; //l,r,s
 uint32_t magnitude = 0;
 
-double liveVal1 = 0;
+//indoor setting
+float KP_MOTOR = 120;
+double KI_MOTOR = 0.001;
+float KD_MOTOR = 0;
+
+float KP_SERVO = 2;
+double KI_SERVO = 0.0001;
+float KD_SERVO = 0;
+
+int ANGLE_STOP_OFFSET = 4;
+int STRAIGHT_MAX_SPEED = 25;
+int TURNING_MAX_SPEED = 15;
+
+//outdoor setting
+//float KP_MOTOR = 120;
+//double KI_MOTOR = 0.0010;
+//float KD_MOTOR = 0;
+//
+//float KP_SERVO = 4;
+//double KI_SERVO = 0.0001;
+//float KD_SERVO = 0;
+//
+//int ANGLE_STOP_OFFSET = 5;
+//int STRAIGHT_MAX_SPEED = 25;
+//int TURNING_MAX_SPEED = 15;
+
 
 /* USER CODE END PV */
 
@@ -801,7 +824,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 		if(start == 0){
 			start = 1;
 		}
-		totalAngle = 0;
+		//totalAngle = 0;
 	}
 }
 
@@ -811,6 +834,7 @@ void resetCar(){
 
 //	pid_reset(&motorCpid);
 //	pid_reset(&motorDpid);
+//	pid_reset(&gyroPID);
 
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
@@ -853,7 +877,9 @@ void StartDefaultTask(void *argument)
 	{
 		if (start == 1)
 		{
-//			startQueue();
+			forward(1,100);
+			osDelay(3000);
+			forward(0,100);
 			start=0;
 			continue;
 		}
@@ -917,7 +943,6 @@ void StartGyroTask(void *argument)
 	gyro_Init();
 	uint8_t val[2] = {0, 0};
 	uint32_t currentTick, previousTick=0;
-	double offset = 0;
 
 	int16_t angularSpeed = 0;
 	double measuredAngle = 0;
@@ -938,7 +963,7 @@ void StartGyroTask(void *argument)
 			if(!isMoving && angularSpeed >= -10 && angularSpeed <= 10)
 				measuredAngle = 0.0;
 			else
-				measuredAngle = ((double)(angularSpeed)+offset) * ((currentTick - previousTick) / 16400.0)*off;
+				measuredAngle = ((double)(angularSpeed)) * ((currentTick - previousTick) / 16400.0)*off;
 
 			totalAngle += measuredAngle;
 
@@ -973,23 +998,22 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//turning
 		if (isAngle)
 		{
-			int offset = 4;
 			if (htim1.Instance->CCR4 <= SERVO_CENTER){ // Turning Left
-				if(totalAngle >= targetAngle-offset && encoderC.direction == 1){
+				if(totalAngle >= targetAngle-ANGLE_STOP_OFFSET && encoderC.direction == 1){
 					motorStop();
 					return;
 				}
-				if(totalAngle <= targetAngle+offset && encoderC.direction == 0){
+				if(totalAngle <= targetAngle+ANGLE_STOP_OFFSET && encoderC.direction == 0){
 					motorStop();
 					return;
 				}
 			}
 			if (htim1.Instance->CCR4 >= SERVO_CENTER){ // Turning Right
-				if(totalAngle <= targetAngle+offset && encoderC.direction == 1){
+				if(totalAngle <= targetAngle+ANGLE_STOP_OFFSET && encoderC.direction == 1){
 					motorStop();
 					return;
 				}
-				if(totalAngle >= targetAngle-offset && encoderC.direction == 0){
+				if(totalAngle >= targetAngle-ANGLE_STOP_OFFSET && encoderC.direction == 0){
 					motorStop();
 					return;
 				}
@@ -1018,8 +1042,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				setTarget(&motorDpid, avgDist*2);
 			}
 			else {
-				setTarget(&motorCpid, 25);
-				setTarget(&motorDpid, 25);
+				setTarget(&motorCpid, STRAIGHT_MAX_SPEED);
+				setTarget(&motorDpid, STRAIGHT_MAX_SPEED);
 			}
 			sprintf(OLED_row1, "dist %d", (int)avgDist);
 		}
