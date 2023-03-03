@@ -106,13 +106,13 @@ float KP_MOTOR = 120;
 double KI_MOTOR = 0.001;
 float KD_MOTOR = 0;
 
-float KP_SERVO = 2;
+float KP_SERVO = 5;
 double KI_SERVO = 0.0001;
 float KD_SERVO = 0;
 
-int ANGLE_STOP_OFFSET = 4;
-int STRAIGHT_MAX_SPEED = 25;
-int TURNING_MAX_SPEED = 15;
+int ANGLE_STOP_OFFSET = 2;
+int STRAIGHT_MAX_SPEED = 40;
+int TURNING_MAX_SPEED = 35;
 
 //outdoor setting
 //float KP_MOTOR = 120;
@@ -832,8 +832,8 @@ void resetCar(){
 	encoder_reset(&encoderC);
 	encoder_reset(&encoderD);
 
-//	pid_reset(&motorCpid);
-//	pid_reset(&motorDpid);
+	pid_reset(&motorCpid);
+	pid_reset(&motorDpid);
 //	pid_reset(&gyroPID);
 
 	reset_average_filter(&encoderCma);
@@ -862,8 +862,8 @@ void StartDefaultTask(void *argument)
 	encoder_reset_counter(&encoderD, &htim2);
 
 	pid_reset(&gyroPID);
-	pid_reset(&motorCpid);
-	pid_reset(&motorDpid);
+//	pid_reset(&motorCpid);
+//	pid_reset(&motorDpid);
 
 	//	motorCpid.errorIntegral =3500000;
 	//	motorDpid.errorIntegral =3500000;
@@ -877,9 +877,12 @@ void StartDefaultTask(void *argument)
 	{
 		if (start == 1)
 		{
-			forward(1,100);
-			osDelay(3000);
-			forward(0,100);
+//			forward(1,100);
+//			osDelay(3000);
+//			forward(0,100);
+			turnRight(1,22);
+//			osDelay(4000);
+//			turnRight(1,180);
 			start=0;
 			continue;
 		}
@@ -998,6 +1001,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//turning
 		if (isAngle)
 		{
+			if(abs(targetAngle) - abs(totalAngle) <= 15){
+				motorCpid.target /= 5.94;//2.54;
+				motorDpid.target /= 5.94;//2.54;
+			}
 			if (htim1.Instance->CCR4 <= SERVO_CENTER){ // Turning Left
 				if(totalAngle >= targetAngle-ANGLE_STOP_OFFSET && encoderC.direction == 1){
 					motorStop();
@@ -1025,11 +1032,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			if(avgDist >= targetDistance){
 				motorStop();
 			}
-			if(avgDist >= targetDistance-5){
+			if(avgDist >= targetDistance-3){
 				setTarget(&motorCpid, 2);
 				setTarget(&motorDpid, 2);
 			}
-			else if(avgDist >= targetDistance-25){
+			else if(avgDist >= targetDistance-10){
 				setTarget(&motorCpid,targetDistance-avgDist);
 				setTarget(&motorDpid,targetDistance-avgDist);
 			}
@@ -1037,9 +1044,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				setTarget(&motorCpid, 3);
 				setTarget(&motorDpid, 3);
 			}
-			else if(avgDist <= 13){
-				setTarget(&motorCpid, avgDist*2);
-				setTarget(&motorDpid, avgDist*2);
+			else if(avgDist <= STRAIGHT_MAX_SPEED/3){
+				setTarget(&motorCpid, avgDist*3);
+				setTarget(&motorDpid, avgDist*3);
 			}
 			else {
 				setTarget(&motorCpid, STRAIGHT_MAX_SPEED);

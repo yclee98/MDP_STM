@@ -6,7 +6,7 @@ extern uint8_t OLED_row5[20];
 
 #define TxBUFFSIZE 35
 #define RxBUFFSIZE 8
-#define QUEUESIZE 20
+#define QUEUESIZE 30
 
 uint8_t aTxBuffer[TxBUFFSIZE];
 uint8_t aRxBuffer[RxBUFFSIZE];

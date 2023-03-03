@@ -193,7 +193,7 @@ void forward(int dir, double dist)
 
 		htim1.Instance->CCR4 = calPWM;
 
-		sprintf(OLED_row4, "servo %d", calPWM);
+		//sprintf(OLED_row4, "servo %d", calPWM);
 
 		osDelay(50);
 	}
