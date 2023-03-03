@@ -83,6 +83,8 @@ void resetCar();
 #define OLED_DC_GPIO_Port GPIOE
 #define LED3_Pin GPIO_PIN_10
 #define LED3_GPIO_Port GPIOE
+#define TRIG_Pin GPIO_PIN_11
+#define TRIG_GPIO_Port GPIOE
 #define CIN1_Pin GPIO_PIN_12
 #define CIN1_GPIO_Port GPIOE
 #define DIN1_Pin GPIO_PIN_11
@@ -96,6 +98,8 @@ void resetCar();
 #define PWMC_GPIO_Port GPIOC
 #define PWMD_Pin GPIO_PIN_9
 #define PWMD_GPIO_Port GPIOC
+#define ECHO_Pin GPIO_PIN_5
+#define ECHO_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 #define ENCODER_C_HTIM htim4
