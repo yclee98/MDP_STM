@@ -106,12 +106,12 @@ float KP_MOTOR = 120;
 double KI_MOTOR = 0.001;
 float KD_MOTOR = 0;
 
-float KP_SERVO = 5;
-double KI_SERVO = 0.0001;
+float KP_SERVO = 3;
+double KI_SERVO = 0;//0.0001;
 float KD_SERVO = 0;
 
 int ANGLE_STOP_OFFSET = 2;
-int STRAIGHT_MAX_SPEED = 40;
+int STRAIGHT_MAX_SPEED = 45;
 int TURNING_MAX_SPEED = 35;
 
 //outdoor setting
@@ -877,12 +877,14 @@ void StartDefaultTask(void *argument)
 	{
 		if (start == 1)
 		{
-//			forward(1,100);
-//			osDelay(3000);
-//			forward(0,100);
-			turnRight(1,22);
-//			osDelay(4000);
-//			turnRight(1,180);
+//			turnLeft(0,20);
+//			osDelay(5000);
+//			turnLeft(1,20);
+//			osDelay(5000);
+//			turnRight(0,20);
+//			osDelay(5000);
+//			turnRight(1,20);
+			turnRight(1,90);
 			start=0;
 			continue;
 		}
@@ -1002,8 +1004,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if (isAngle)
 		{
 			if(abs(targetAngle) - abs(totalAngle) <= 15){
-				motorCpid.target /= 5.94;//2.54;
-				motorDpid.target /= 5.94;//2.54;
+				motorCpid.target /= 1.2;//5.94;//2.54;
+				motorDpid.target /= 1.2;//5.94;//2.54;
 			}
 			if (htim1.Instance->CCR4 <= SERVO_CENTER){ // Turning Left
 				if(totalAngle >= targetAngle-ANGLE_STOP_OFFSET && encoderC.direction == 1){
@@ -1076,7 +1078,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	if(htim==&htim6 && isMoving){
 		update_encoder(&encoderD, &htim2);
-		sprintf(OLED_row3, "velD %d", encoderD.velocity);
+		//sprintf(OLED_row3, "velD %d", encoderD.velocity);
 
 		if(!pidEnable) //dont do pid if not enable
 			return;
@@ -1087,7 +1089,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //		setMotorDPWM();
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
 
-		//sprintf(OLED_row5, "pwmD %d", motorDpid.output);
+		sprintf(OLED_row3, "pwmD %d", motorDpid.output);
 		//printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
 	}

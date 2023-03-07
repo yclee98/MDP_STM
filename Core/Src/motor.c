@@ -113,6 +113,7 @@ void setMotorDPWM(){
 void motorStart(){
 	__disable_irq();
 	isMoving = 1;
+	totalAngle = 0.0;
 
 	if(pidEnable == 0){
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 5000);
@@ -183,7 +184,7 @@ void forward(int dir, double dist)
 			calPWM = (int)(SERVO_CENTER - gyroPID.output);
 		}
 		else if(dir == 0)//reverse
-			calPWM = (int)(SERVO_CENTER + gyroPID.output);
+			calPWM = (int)(SERVO_CENTER+1 + gyroPID.output);
 
 		if(calPWM > 249)
 			calPWM = 249;
@@ -226,15 +227,17 @@ void turnLeft(int dir, double angle) //radius = 24.5
 	while(isMoving)
 		osDelay(100);
 
-	if (!dir)
-		totalAngle +=angle;
-	else
-		totalAngle -= angle;
+//	if (!dir)
+//		totalAngle +=angle;
+//	else
+//		totalAngle -= angle;
+
+	totalAngle = 0.0;
 
 	isAngle = 0;
 }
 
-void turnRight(int dir, double angle) //radius = 24.3
+void turnRight(int dir, double angle) //radius = 24.3,25.45
 {
 	if(angle > 360 || angle < 0)
 			return;
@@ -259,10 +262,12 @@ void turnRight(int dir, double angle) //radius = 24.3
 	while(isMoving)
 		osDelay(100);
 
-	if (dir)
-		totalAngle +=angle;
-	else
-		totalAngle -= angle;
+//	if (dir)
+//		totalAngle +=angle;
+//	else
+//		totalAngle -= angle;
+
+	totalAngle = 0.0;
 
 	isAngle = 0;
 }
