@@ -113,7 +113,7 @@ void setMotorDPWM(){
 void motorStart(){
 	__disable_irq();
 	isMoving = 1;
-	totalAngle = 0.0;
+//	totalAngle = 0.0;
 
 	if(pidEnable == 0){
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 5000);
@@ -227,12 +227,12 @@ void turnLeft(int dir, double angle) //radius = 24.5
 	while(isMoving)
 		osDelay(100);
 
-//	if (!dir)
-//		totalAngle +=angle;
-//	else
-//		totalAngle -= angle;
+	if (!dir)
+		totalAngle +=angle;
+	else
+		totalAngle -= angle;
 
-	totalAngle = 0.0;
+//	totalAngle = 0.0;
 
 	isAngle = 0;
 }
@@ -262,12 +262,13 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 	while(isMoving)
 		osDelay(100);
 
-//	if (dir)
-//		totalAngle +=angle;
-//	else
-//		totalAngle -= angle;
+	if (dir)
+		totalAngle +=angle;
+	else
+		totalAngle -= angle;
 
-	totalAngle = 0.0;
+//	totalAngle = 0.0;
 
 	isAngle = 0;
 }
+

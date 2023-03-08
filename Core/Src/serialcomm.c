@@ -94,8 +94,10 @@ int dequeue(){
 
 	movement = actionBuffer[backCounter][1];
 	magnitude = 0;
-	for(int i=2; i<RxBUFFSIZE; i++){
-		magnitude = (actionBuffer[backCounter][i] - 48) + magnitude *10;
+	if(movement != 'A'){ //need find magnitude if it is not A; A is for the tilt
+		for(int i=2; i<RxBUFFSIZE; i++){
+			magnitude = (actionBuffer[backCounter][i] - 48) + magnitude *10;
+		}
 	}
 
 	queueSize--;

@@ -30,8 +30,8 @@ void apply_pid(pid_instance *m, int16_t measuredVelocity){
 
 	if(m->output >= PID_MAX)
 		m->output = PID_MAX;
-	else if(m->output <=400)
-		m->output = 400;
+	else if(m->output <=0)
+		m->output = 0;
 
 //	sprintf(OLED_row5, "err %d", (int)m->errorIntegral);
 
