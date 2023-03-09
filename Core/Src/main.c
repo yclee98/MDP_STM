@@ -117,19 +117,6 @@ int STRAIGHT_MAX_SPEED;
 int TURNING_MAX_SPEED;
 float TURNING_SPEED_DIVISOR;
 
-//outdoor setting
-//float KP_MOTOR = 70;
-//double KI_MOTOR = 0.001;
-//float KD_MOTOR = 2000;
-//
-//float KP_SERVO = 3;
-//double KI_SERVO = 0.000001;//0.0001;
-//float KD_SERVO = 0;
-//
-//int ANGLE_STOP_OFFSET = 2;
-//int STRAIGHT_MAX_SPEED = 40;
-//int TURNING_MAX_SPEED = 25;
-//float TURNING_SPEED_DIVISOR = 3.39;
 
 void setConstant(){
 	if(indoor){
@@ -157,8 +144,8 @@ void setConstant(){
 		KD_SERVO = 0;
 
 		ANGLE_STOP_OFFSET = 2;
-		STRAIGHT_MAX_SPEED = 40;
-		TURNING_MAX_SPEED = 25;
+		STRAIGHT_MAX_SPEED = 20;
+		TURNING_MAX_SPEED = 35;
 		TURNING_SPEED_DIVISOR = 3.39;
 	}
 }
