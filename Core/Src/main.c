@@ -865,6 +865,8 @@ void resetCar(){
 	targetDistance = 0;
 }
 
+int tilted = 0;
+int numOfEnd;
 
 /* USER CODE END 4 */
 
@@ -893,20 +895,22 @@ void StartDefaultTask(void *argument)
 	int numLeft = 0;
 	int numRight = 0;
 
-	int tilted = 0;
+
 
 	for (;;)
 	{
 		if (start == 1)
 		{
-//			turnRight(1,360);
+//			turnRight(1,180);
 //			forward(1,200);
 //			forward(0,100);
 //			osDelay(4000);
 //			turnLeft(1,360);
 //			forward(0,200);
 			indoor = 1 - indoor;
+//			indoor = 1;
 			setConstant();
+//			turnLeft(1,180);
 			start=0;
 			continue;
 		}
@@ -919,6 +923,19 @@ void StartDefaultTask(void *argument)
 				turnLeft(1,20);
 			}else if(tilted == 2){
 				turnRight(1,20);
+			}
+			else if(numOfEnd >= 6)
+			{
+				if(tilted == 4)
+				{
+					turnLeft(1, 10);
+					forward(1, 10);
+				}
+				else if(tilted == 3)
+				{
+					turnRight(1, 10);
+					forward(1, 10);
+				}
 			}
 
 			if(movement == 'S'){
@@ -936,7 +953,22 @@ void StartDefaultTask(void *argument)
 				turnRight(direction, magnitude/1000.0);
 			}
 			else if(movement == 'A'){
-				if(tilted == 2 || (numLeft > numRight && tilted != 1)){
+				if(numOfEnd >= 6)
+				{
+					if (tilted == 3 || (numLeft > numRight && tilted != 4))
+					{
+						tilted = 4;
+						forward(0, 10);
+						turnLeft(0, 10);
+					}
+					else
+					{
+						tilted = 3;
+						forward(0, 10);
+						turnRight(0, 10);
+					}
+				}
+				else if(tilted == 2 || (numLeft > numRight && tilted != 1)){
 					//tilt right
 					tilted = 1;
 					turnLeft(0,20);
@@ -1048,7 +1080,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if (isAngle)
 		{
 			if(abs(targetAngle) - abs(totalAngle) <= 25){
-				if (motorCpid.target == TURNING_MAX_SPEED || motorDpid.target == TURNING_MAX_SPEED)
+				if (tilted == 0 && (motorCpid.target == TURNING_MAX_SPEED || motorDpid.target == TURNING_MAX_SPEED))
 				{
 					motorCpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
 					motorDpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
