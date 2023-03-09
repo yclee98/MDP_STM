@@ -44,18 +44,18 @@ float gyroSamplingRate = 200.0;
 
 void apply_pid_servo(pid_instance *m, double measuredGyro){
 	int32_t inputError = 0 - measuredGyro;
-	m->errorIntegral += inputError * gyroSamplingRate;
-
-	double errorChange = inputError - m->lastError;
-	m->lastError = inputError;
-
-	double errorRate = errorChange / gyroSamplingRate;
-
-	m->output =
-			KP_SERVO * inputError +
-			KI_SERVO * m->errorIntegral +
-			KD_SERVO * errorRate;
-
+//	m->errorIntegral += inputError * gyroSamplingRate;
+//
+//	double errorChange = inputError - m->lastError;
+//	m->lastError = inputError;
+//
+//	double errorRate = errorChange / gyroSamplingRate;
+//
+//	m->output =
+//			KP_SERVO * inputError +
+//			KI_SERVO * m->errorIntegral +
+//			KD_SERVO * errorRate;
+m->output = KP_SERVO * inputError;
 //	sprintf(OLED_row5, "errg %d", (long)m->errorIntegral);
 }
 
