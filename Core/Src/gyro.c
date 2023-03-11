@@ -36,6 +36,6 @@ void gyro_Init(){
 	osDelayUntil(10);
 	writeByte(0x7F, 0x00); //REG_BANK_SEL; select user bank0
 	osDelayUntil(10);
-	writeByte(0x07, 0x00); //0x38 PWR_MGMT2; ACCLEROMETER ENABLED, GYROSCOPE ENABLED
+	writeByte(0x07, 0x38); //0x38 PWR_MGMT2; ACCLEROMETER ENABLED, GYROSCOPE ENABLED
 	osDelayUntil(10);
 }

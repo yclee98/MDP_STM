@@ -17,6 +17,7 @@ extern uint8_t waitingForCommand;
 extern uint8_t direction; //forward=1 or backward=0
 extern uint8_t movement; //turn left/right or straight
 extern uint32_t magnitude;
+extern int numOfEnd;
 
 uint8_t actionBuffer[QUEUESIZE][RxBUFFSIZE+1];
 int frontCounter = 0;
@@ -68,6 +69,7 @@ int dequeue(){
 
 	//check if end of action
 	if(strcmp(actionBuffer[backCounter], "END00000\0") ==0){
+		numOfEnd += 1;
 		waitingForCommand = 1;
 		queueSize--;
 		backCounter++;
@@ -94,8 +96,10 @@ int dequeue(){
 
 	movement = actionBuffer[backCounter][1];
 	magnitude = 0;
-	for(int i=2; i<RxBUFFSIZE; i++){
-		magnitude = (actionBuffer[backCounter][i] - 48) + magnitude *10;
+	if(movement != 'A'){ //need find magnitude if it is not A; A is for the tilt
+		for(int i=2; i<RxBUFFSIZE; i++){
+			magnitude = (actionBuffer[backCounter][i] - 48) + magnitude *10;
+		}
 	}
 
 	queueSize--;
