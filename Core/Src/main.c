@@ -1011,7 +1011,8 @@ void StartDefaultTask(void *argument)
 				double targetDist = magnitude;
 				for (;;)
 				{
-					double dist = 0; // Scan Distance. R
+					HCSR04_Read(); // Call Sensor
+					double dist = ultrasonicDistance;
 					if (dist < 400) // Valid distance
 					{
 						if (dist > targetDist - 1 && dist < targetDist + 1)
