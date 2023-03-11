@@ -1005,6 +1005,32 @@ void StartDefaultTask(void *argument)
 				numRight++;
 				turnRight(direction, magnitude/1000.0);
 			}
+			else if(movement == 'D')
+			{
+				tilted = 0;
+				double targetDist = magnitude;
+				for (;;)
+				{
+					double dist = 0; // Scan Distance. R
+					if (dist < 400) // Valid distance
+					{
+						if (dist > targetDist - 1 && dist < targetDist + 1)
+							break;
+						else if (dist <= targetDist)
+						{
+							forward(0, dist-targetDist);
+						}
+						else
+						{
+							forward(1, dist-targetDist);
+						}
+					}
+					else
+					{
+						forward(1, 30);
+					}
+				}
+			}
 			else if(movement == 'A'){
 				if(numOfEnd >= 6)
 				{

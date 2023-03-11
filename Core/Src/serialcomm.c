@@ -88,6 +88,16 @@ int dequeue(){
 		direction = 1;
 	else if(actionBuffer[backCounter][0] == 'B')
 		direction = 0;
+	else if(actionBuffer[backCounter][0] == 'S')
+	{
+		direction = 1;
+		magnitude = 0;
+		movement = 'D';
+		for(int i=6; i<RxBUFFSIZE; i++){
+			magnitude = (actionBuffer[backCounter][i] - 48) + magnitude *10;
+		}
+		return 1;
+	}
 	else{
 		queueSize--;
 		backCounter++;
