@@ -1012,18 +1012,17 @@ void StartDefaultTask(void *argument)
 				for (;;)
 				{
 					HCSR04_Read(); // Call Sensor
-					double dist = ultrasonicDistance;
-					if (dist < 400) // Valid distance
+					if (ultrasonicDistance < 400) // Valid distance
 					{
-						if (dist > targetDist - 1 && dist < targetDist + 1)
+						if (ultrasonicDistance > targetDist - 1 && ultrasonicDistance < targetDist + 1)
 							break;
-						else if (dist <= targetDist)
+						else if (ultrasonicDistance <= targetDist)
 						{
-							forward(0, dist-targetDist);
+							forward(0, targetDist-ultrasonicDistance);
 						}
 						else
 						{
-							forward(1, dist-targetDist);
+							forward(1, ultrasonicDistance-targetDist);
 						}
 					}
 					else
