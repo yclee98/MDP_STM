@@ -43,6 +43,7 @@ extern "C" {
 #include "encoder.h"
 #include "pid.h"
 #include "moving_avg.h"
+#include "ultrasonic.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
