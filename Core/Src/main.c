@@ -933,6 +933,9 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	setConstant();
+	HCSR04_Read();
+	sprintf(OLED_row3, "%d", (int)ultrasonicDistance);
+
 
 	sprintf(OLED_row0, "start");
 	resetCar();
@@ -954,16 +957,10 @@ void StartDefaultTask(void *argument)
 	{
 		if (start == 1)
 		{
-//			turnRight(1,180);
-//			forward(1,200);
-//			forward(0,100);
-//			osDelay(4000);
-//			turnLeft(1,360);
-//			forward(0,200);
 			indoor = 1 - indoor;
-//			indoor = 1;
 			setConstant();
-//			turnLeft(1,180);
+			HCSR04_Read();
+			sprintf(OLED_row3, "%d", (int)ultrasonicDistance);
 			start=0;
 			continue;
 		}
