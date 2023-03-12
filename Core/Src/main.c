@@ -919,6 +919,7 @@ void resetCar(){
 
 int tilted = 0;
 int numOfEnd;
+double memorizedDist = 0;
 
 /* USER CODE END 4 */
 
@@ -1027,6 +1028,11 @@ void StartDefaultTask(void *argument)
 						forward(1, 30);
 					}
 				}
+			}
+			else if(movement == 'M')
+			{
+				int tempAlgoDist = 0;
+				forward(1, 10 + tempAlgoDist + memorizedDist + 10);
 			}
 			else if(movement == 'A'){
 				if(numOfEnd >= 6)

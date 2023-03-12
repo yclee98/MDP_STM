@@ -18,6 +18,8 @@ extern uint8_t direction; //forward=1 or backward=0
 extern uint8_t movement; //turn left/right or straight
 extern uint32_t magnitude;
 extern int numOfEnd;
+extern double memorizedDist;
+extern double ultrasonicDistance;
 
 uint8_t actionBuffer[QUEUESIZE][RxBUFFSIZE+1];
 int frontCounter = 0;
@@ -82,6 +84,18 @@ int dequeue(){
 		queueSize--;
 		backCounter++;
 		return 0;
+	}
+	else if(strcmp(actionBuffer[backCounter], "MEMORIZE\0") ==0){
+		memorizedDist = ultrasonicDistance;
+		queueSize--;
+		backCounter++;
+		return 1;
+	}
+	else if(strcmp(actionBuffer[backCounter], "MOVEMEMO\0") ==0){
+		movement = 'M';
+		queueSize--;
+		backCounter++;
+		return 1;
 	}
 
 	if(actionBuffer[backCounter][0] == 'F')
