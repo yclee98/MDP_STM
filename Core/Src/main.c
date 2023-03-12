@@ -1007,6 +1007,8 @@ void StartDefaultTask(void *argument)
 			{
 				tilted = 0;
 				double targetDist = magnitude;
+				HCSR04_Read();
+				memorizedDist = ultrasonicDistance;
 				for (;;)
 				{
 					HCSR04_Read(); // Call Sensor

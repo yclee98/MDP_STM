@@ -18,8 +18,6 @@ extern uint8_t direction; //forward=1 or backward=0
 extern uint8_t movement; //turn left/right or straight
 extern uint32_t magnitude;
 extern int numOfEnd;
-extern double memorizedDist;
-extern double ultrasonicDistance;
 
 uint8_t actionBuffer[QUEUESIZE][RxBUFFSIZE+1];
 int frontCounter = 0;
@@ -98,8 +96,6 @@ int dequeue(){
 		direction = 0;
 	else if(actionBuffer[backCounter][0] == 'S')
 	{
-		HCSR04_Read();
-		memorizedDist = ultrasonicDistance;
 		direction = 1;
 		magnitude = 0;
 		movement = 'D';
