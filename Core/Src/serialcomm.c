@@ -85,12 +85,6 @@ int dequeue(){
 		backCounter++;
 		return 0;
 	}
-	else if(strcmp(actionBuffer[backCounter], "MEMORIZE\0") ==0){
-		memorizedDist = ultrasonicDistance;
-		queueSize--;
-		backCounter++;
-		return 1;
-	}
 	else if(strcmp(actionBuffer[backCounter], "MOVEMEMO\0") ==0){
 		movement = 'M';
 		queueSize--;
@@ -104,6 +98,8 @@ int dequeue(){
 		direction = 0;
 	else if(actionBuffer[backCounter][0] == 'S')
 	{
+		HCSR04_Read();
+		memorizedDist = ultrasonicDistance;
 		direction = 1;
 		magnitude = 0;
 		movement = 'D';
