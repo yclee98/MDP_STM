@@ -103,7 +103,7 @@ uint8_t direction = 0; //forward=1 or backward=0
 uint8_t movement = ' '; //l,r,s
 uint32_t magnitude = 0;
 
-int indoor = 0;
+int indoor = 1;
 
 //indoor setting
 float KP_MOTOR;
@@ -122,7 +122,7 @@ float TURNING_SPEED_DIVISOR;
 
 void setConstant(){
 	if(indoor){
-		sprintf(OLED_row2, "indoor");
+		sprintf(OLED_row1, "indoor");
 		KP_MOTOR = 70;
 		KI_MOTOR = 0.001;
 		KD_MOTOR = 2000;
@@ -136,7 +136,7 @@ void setConstant(){
 		TURNING_MAX_SPEED = 35;
 		TURNING_SPEED_DIVISOR = 4;
 	}else{
-		sprintf(OLED_row2, "outdoor");
+		sprintf(OLED_row1, "outdoor");
 		KP_MOTOR = 70;
 		KI_MOTOR = 0.001;
 		KD_MOTOR = 2000;
@@ -898,7 +898,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 		if(start == 0){
 			start = 1;
 		}
-		//totalAngle = 0;
+		totalAngle = 0;
 	}
 }
 
@@ -929,14 +929,13 @@ double memorizedDist = 0;
  * @param  argument: Not used
  * @retval None
  */
-/* USER CODE END Header_Star	tDefaultTask */
+/* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	setConstant();
+	HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
 	HCSR04_Read();
-	sprintf(OLED_row3, "%d", (int)ultrasonicDistance);
-
 
 	sprintf(OLED_row0, "start");
 	resetCar();
@@ -948,20 +947,18 @@ void StartDefaultTask(void *argument)
 	pidEnable = 1;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 
-	HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
 	int numLeft = 0;
 	int numRight = 0;
-
-
 
 	for (;;)
 	{
 		if (start == 1)
 		{
-			indoor = 1 - indoor;
-			setConstant();
+//			indoor = 1 - indoor;
+//			setConstant();
 			HCSR04_Read();
-			sprintf(OLED_row3, "%d", (int)ultrasonicDistance);
+			startQueue();
+//			forward(1,50);
 			start=0;
 			continue;
 		}
@@ -1012,7 +1009,8 @@ void StartDefaultTask(void *argument)
 				for (;;)
 				{
 					HCSR04_Read(); // Call Sensor
-					if (ultrasonicDistance < 400) // Valid distance
+
+					if (ultrasonicDistance <= 80 && ultrasonicDistance != -1) // Valid distance
 					{
 						if (ultrasonicDistance > targetDist - 1 && ultrasonicDistance < targetDist + 1)
 							break;
@@ -1027,6 +1025,7 @@ void StartDefaultTask(void *argument)
 					}
 					else
 					{
+						sprintf(OLED_row3, "F30 %d", (int)ultrasonicDistance);
 						forward(1, 30);
 					}
 				}
@@ -1036,7 +1035,7 @@ void StartDefaultTask(void *argument)
 				int tempAlgoDist = 0;
 				forward(1, 10 + tempAlgoDist + memorizedDist + 10);
 			}
-			else if(movement == 'A'){
+			else if(movement == 'A'){ //FALSE000
 				if(numOfEnd >= 6)
 				{
 					if (tilted == 3 || (numLeft > numRight && tilted != 4))
@@ -1224,7 +1223,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if(htim==&htim7 && isMoving){
 		update_encoder(&encoderC, &htim4);
-		sprintf(OLED_row2, "velC %d", encoderC.velocity);
+//		sprintf(OLED_row2, "velC %d", encoderC.velocity);
 
 		if(!pidEnable) //dont do pid if not enable
 			return;
@@ -1252,7 +1251,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //		setMotorDPWM();
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
 
-		sprintf(OLED_row3, "pwmD %d", motorDpid.output);
+//		sprintf(OLED_row3, "pwmD %d", motorDpid.output);
 		//printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
 	}

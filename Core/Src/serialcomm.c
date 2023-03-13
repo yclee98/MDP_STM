@@ -26,7 +26,7 @@ int queueSize = 0;
 
 void startQueue(){
 	char * actionsList[] ={
-		"BS025000", "FR079667", "FS014000", "FL169667","END00000"
+		"SENSOR30", "FL036870", "FS030000", "FR036870","SENSOR60", "FL036870", "FS070000", "FR090000", "FS080000", "FR090000", "FS160000","END00000"
 	};
 
 	for(int i=0; i<sizeof(actionsList)/sizeof(char*); i++){
@@ -94,7 +94,7 @@ int dequeue(){
 		direction = 1;
 	else if(actionBuffer[backCounter][0] == 'B')
 		direction = 0;
-	else if(actionBuffer[backCounter][0] == 'S')
+	else if(actionBuffer[backCounter][0] == 'S') //SENSORXX
 	{
 		direction = 1;
 		magnitude = 0;
@@ -102,6 +102,8 @@ int dequeue(){
 		for(int i=6; i<RxBUFFSIZE; i++){
 			magnitude = (actionBuffer[backCounter][i] - 48) + magnitude *10;
 		}
+		queueSize--;
+		backCounter++;
 		return 1;
 	}
 	else{

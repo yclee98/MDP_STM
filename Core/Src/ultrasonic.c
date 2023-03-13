@@ -37,7 +37,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 			ultrasonicDistance = Difference * .034/2;
 			Is_First_Captured = 0;
 
-			sprintf(OLED_row4, "Dist %d",ultrasonicDistance);
+			sprintf(OLED_row4, "Ultra %d",(int)ultrasonicDistance);
 
 			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_2, TIM_INPUTCHANNELPOLARITY_RISING);
 			__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_CC2);
@@ -48,12 +48,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 //It is recommended to wait for at least 60ms before starting the operation again
 void HCSR04_Read()
 {
-	ultrasonicDistance = 0;
+	ultrasonicDistance = -1;
+	//int c = 10;
+
 	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
 	osDelay(10);
 	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
 
 	__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_CC2);
+	osDelay(100);
 }
 
 
