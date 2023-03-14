@@ -132,8 +132,8 @@ void setConstant(){
 		KD_SERVO = 0;
 
 		ANGLE_STOP_OFFSET = 2;
-		STRAIGHT_MAX_SPEED = 55;
-		TURNING_MAX_SPEED = 35;
+		STRAIGHT_MAX_SPEED = 70;
+		TURNING_MAX_SPEED = 50;
 		TURNING_SPEED_DIVISOR = 2;
 	}else{
 		sprintf(OLED_row1, "outdoor");
@@ -1003,10 +1003,7 @@ void StartDefaultTask(void *argument)
 			{
 				tilted = 0;
 				double targetDist = magnitude;
-				HCSR04_Read();
-				memorizedDist = ultrasonicDistance;
-				sprintf(OLED_row3, "mem %d", (int)memorizedDist);
-
+				int forwardDist = 0;
 				for (;;)
 				{
 					HCSR04_Read(); // Call Sensor
@@ -1017,11 +1014,15 @@ void StartDefaultTask(void *argument)
 							break;
 						else if (ultrasonicDistance <= targetDist)
 						{
-							forward(0, targetDist-ultrasonicDistance);
+							forwardDist = targetDist-ultrasonicDistance;
+							if(forwardDist >3)
+								forward(0, forwardDist);
 						}
 						else
 						{
-							forward(1, ultrasonicDistance-targetDist);
+							forwardDist = ultrasonicDistance-targetDist;
+							if(forwardDist >3)
+								forward(1, forwardDist);
 						}
 					}
 					else
@@ -1032,9 +1033,30 @@ void StartDefaultTask(void *argument)
 			}
 			else if(movement == 'M')
 			{
-				int tempAlgoDist = 0;
-				forward(1, memorizedDist+5);
+				forward(1, memorizedDist+20);
 			}
+
+			else if(movement == 'P' || movement == 'O')
+			{
+				HCSR04_Read();
+				memorizedDist = ultrasonicDistance;
+				sprintf(OLED_row3, "mem %d", (int)memorizedDist);
+				if(memorizedDist <60){ //tilt
+					if(movement == 'P'){
+						//title left
+						tilted = 2;
+						turnRight(0,20);
+					}else if(movement == 'O'){
+						//tilt right
+						tilted = 1;
+						turnLeft(0,20);
+					}
+				}
+				else{ //move forward until 60
+					forward(1, memorizedDist - 60);
+				}
+			}
+
 			else if(movement == 'A'){ //FALSE000
 				if(numOfEnd >= 6)
 				{

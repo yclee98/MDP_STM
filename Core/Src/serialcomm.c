@@ -26,7 +26,10 @@ int queueSize = 0;
 
 void startQueue(){
 	char * actionsList[] ={
-			"SENSOR60","END00000"
+			"SENSOR30","FR031397","FS033948","FL031397","TPR00000",
+			"SENSOR50","FL057645","FS061298","FR146522","FS050101",
+			"FR088877","MOVEMEMO","FR065307","FS023022","FL065307",
+			"SENSOR10","END00000"
 	};
 
 	for(int i=0; i<sizeof(actionsList)/sizeof(char*); i++){
@@ -77,12 +80,12 @@ int dequeue(){
 		HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
 		return 0;
 	}
-	else if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
-		waitingForCommand = 1;
-		queueSize--;
-		backCounter++;
-		return 0;
-	}
+//	else if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
+//		waitingForCommand = 1;
+//		queueSize--;
+//		backCounter++;
+//		return 0;
+//	}
 	else if(strcmp(actionBuffer[backCounter], "MOVEMEMO\0") ==0){
 		movement = 'M';
 		queueSize--;
@@ -106,6 +109,15 @@ int dequeue(){
 		backCounter++;
 		return 1;
 	}
+	else if(actionBuffer[backCounter][0] == 'T'){ //TPR00000, TPL00000 to position the car for take pic
+			if(actionBuffer[backCounter][2] == 'R')
+				movement = 'P'; //it is at right side
+			else
+				movement = 'O'; //it is at left side
+			queueSize--;
+			backCounter++;
+			return 1;
+		}
 	else{
 		queueSize--;
 		backCounter++;
