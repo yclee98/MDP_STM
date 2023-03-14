@@ -26,7 +26,7 @@ int queueSize = 0;
 
 void startQueue(){
 	char * actionsList[] ={
-		"SENSOR30", "FL036870", "FS030000", "FR036870","SENSOR60", "FL036870", "FS070000", "FR090000", "FS080000", "FR090000", "FS160000","END00000"
+			"SENSOR60","END00000"
 	};
 
 	for(int i=0; i<sizeof(actionsList)/sizeof(char*); i++){

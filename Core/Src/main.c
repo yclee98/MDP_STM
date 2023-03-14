@@ -90,7 +90,7 @@ double circumferenceWheel = 21.3;
 volatile double totalAngle =0;
 double targetAngle = 0;
 double targetDistance = 0;
-double ultrasonicDistance = 0;
+volatile double ultrasonicDistance = 0;
 
 encoder_instance encoderC, encoderD;
 pid_instance motorCpid, motorDpid;
@@ -132,9 +132,9 @@ void setConstant(){
 		KD_SERVO = 0;
 
 		ANGLE_STOP_OFFSET = 2;
-		STRAIGHT_MAX_SPEED = 45;
+		STRAIGHT_MAX_SPEED = 55;
 		TURNING_MAX_SPEED = 35;
-		TURNING_SPEED_DIVISOR = 4;
+		TURNING_SPEED_DIVISOR = 2;
 	}else{
 		sprintf(OLED_row1, "outdoor");
 		KP_MOTOR = 70;
@@ -956,9 +956,8 @@ void StartDefaultTask(void *argument)
 		{
 //			indoor = 1 - indoor;
 //			setConstant();
-			HCSR04_Read();
+//			HCSR04_Read();
 			startQueue();
-//			forward(1,50);
 			start=0;
 			continue;
 		}
@@ -1000,17 +999,19 @@ void StartDefaultTask(void *argument)
 				numRight++;
 				turnRight(direction, magnitude/1000.0);
 			}
-			else if(movement == 'D')
+			else if(movement == 'D') //sensor movement
 			{
 				tilted = 0;
 				double targetDist = magnitude;
 				HCSR04_Read();
 				memorizedDist = ultrasonicDistance;
+				sprintf(OLED_row3, "mem %d", (int)memorizedDist);
+
 				for (;;)
 				{
 					HCSR04_Read(); // Call Sensor
 
-					if (ultrasonicDistance <= 80 && ultrasonicDistance != -1) // Valid distance
+					if (ultrasonicDistance <= 150 && ultrasonicDistance != -1) // Valid distance
 					{
 						if (ultrasonicDistance > targetDist - 1 && ultrasonicDistance < targetDist + 1)
 							break;
@@ -1025,7 +1026,6 @@ void StartDefaultTask(void *argument)
 					}
 					else
 					{
-						sprintf(OLED_row3, "F30 %d", (int)ultrasonicDistance);
 						forward(1, 30);
 					}
 				}
@@ -1033,7 +1033,7 @@ void StartDefaultTask(void *argument)
 			else if(movement == 'M')
 			{
 				int tempAlgoDist = 0;
-				forward(1, 10 + tempAlgoDist + memorizedDist + 10);
+				forward(1, memorizedDist+5);
 			}
 			else if(movement == 'A'){ //FALSE000
 				if(numOfEnd >= 6)

@@ -56,7 +56,21 @@ void HCSR04_Read()
 	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
 
 	__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_CC2);
-	osDelay(100);
+	osDelay(200);
 }
 
+double getUltrasonicDistance(){
+	int tries = 3;
+	int oldValue = 0, newValue = 0;
+
+	for(int i=0; i<tries; i++){
+		HCSR04_Read();
+		newValue = ultrasonicDistance;
+
+		if(newValue <= oldValue+3 && newValue >= oldValue-3 && newValue != -1)
+			return newValue;
+		oldValue = newValue;
+	}
+	return -1;
+}
 

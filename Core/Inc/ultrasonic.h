@@ -6,5 +6,6 @@
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim);
 void HCSR04_Read();
+double getUltrasonicDistance();
 
 #endif /* INC_ULTRASONIC_H_ */
