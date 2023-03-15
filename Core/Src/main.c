@@ -103,7 +103,7 @@ uint8_t direction = 0; //forward=1 or backward=0
 uint8_t movement = ' '; //l,r,s
 uint32_t magnitude = 0;
 
-int indoor = 1;
+int indoor = 0;
 
 //indoor setting
 float KP_MOTOR;
@@ -141,14 +141,14 @@ void setConstant(){
 		KI_MOTOR = 0.001;
 		KD_MOTOR = 2000;
 
-		KP_SERVO = 3;
+		KP_SERVO = 2;
 		KI_SERVO = 0.000001;//0.0001;
 		KD_SERVO = 0;
 
 		ANGLE_STOP_OFFSET = 2;
-		STRAIGHT_MAX_SPEED = 20;
-		TURNING_MAX_SPEED = 35;
-		TURNING_SPEED_DIVISOR = 3.39;
+		STRAIGHT_MAX_SPEED = 70;
+		TURNING_MAX_SPEED = 50;
+		TURNING_SPEED_DIVISOR = 2;
 	}
 }
 
@@ -958,6 +958,8 @@ void StartDefaultTask(void *argument)
 //			setConstant();
 //			HCSR04_Read();
 			startQueue();
+//			forward(1,50);
+//			turnLeft(1,30);
 			start=0;
 			continue;
 		}
@@ -1010,7 +1012,7 @@ void StartDefaultTask(void *argument)
 
 					if (ultrasonicDistance <= 150 && ultrasonicDistance != -1) // Valid distance
 					{
-						if (ultrasonicDistance > targetDist - 1 && ultrasonicDistance < targetDist + 1)
+						if (ultrasonicDistance > targetDist - 3 && ultrasonicDistance < targetDist + 3)
 							break;
 						else if (ultrasonicDistance <= targetDist)
 						{
@@ -1038,7 +1040,6 @@ void StartDefaultTask(void *argument)
 
 			else if(movement == 'P' || movement == 'O')
 			{
-				HCSR04_Read();
 				memorizedDist = ultrasonicDistance;
 				sprintf(OLED_row3, "mem %d", (int)memorizedDist);
 				if(memorizedDist <60){ //tilt
@@ -1052,9 +1053,9 @@ void StartDefaultTask(void *argument)
 						turnLeft(0,20);
 					}
 				}
-				else{ //move forward until 60
-					forward(1, memorizedDist - 60);
-				}
+//				else{ //move forward until 60
+//					forward(1, memorizedDist - 60);
+//				}
 			}
 
 			else if(movement == 'A'){ //FALSE000
