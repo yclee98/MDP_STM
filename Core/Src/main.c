@@ -950,16 +950,18 @@ void StartDefaultTask(void *argument)
 	int numLeft = 0;
 	int numRight = 0;
 
+	int firstTurn = 0;
+
 	for (;;)
 	{
 		if (start == 1)
 		{
 //			indoor = 1 - indoor;
 //			setConstant();
-//			HCSR04_Read();
-			startQueue();
-//			forward(1,50);
-//			turnLeft(1,30);
+			sensorDistance(30);
+			path1Left();
+			osDelay(1000);
+			path2LeftLeft();
 			start=0;
 			continue;
 		}
@@ -968,26 +970,52 @@ void StartDefaultTask(void *argument)
 			if(!dequeue())//when return 0
 				continue;
 
-			if(tilted == 1){
-				turnLeft(1,20);
-			}else if(tilted == 2){
-				turnRight(1,20);
+			if(movement == 'Q'){
+				sensorDistance(30);
 			}
-			else if(numOfEnd >= 6)
-			{
-				if(tilted == 4)
-				{
-					turnLeft(1, 10);
-					forward(1, 10);
+			else if(movement == 'W'){
+				firstTurn = 0;
+				path1Left();
+			}
+			else if(movement == 'E'){
+				firstTurn = 1;
+				path1Right();
+			}
+			else if(movement == 'R'){
+				if(firstTurn){
+					path2RightLeft();
+				}else{
+					path2LeftLeft();
 				}
-				else if(tilted == 3)
-				{
-					turnRight(1, 10);
-					forward(1, 10);
+			}
+			else if(movement == 'T'){
+				if(firstTurn){
+					path2RightRight();
+				}else{
+					path2LeftRight();
 				}
 			}
 
-			if(movement == 'S'){
+			//			if(tilted == 1){
+			//				turnLeft(1,20);
+			//			}else if(tilted == 2){
+			//				turnRight(1,20);
+			//			}
+			//			else if(numOfEnd >= 6)
+			//			{
+			//				if(tilted == 4)
+			//				{
+			//					turnLeft(1, 10);
+			//					forward(1, 10);
+			//				}
+			//				else if(tilted == 3)
+			//				{
+			//					turnRight(1, 10);
+			//					forward(1, 10);
+			//				}
+			//			}
+
+			else if(movement == 'S'){
 				tilted = 0;
 				forward(direction, magnitude/1000.0);
 			}
@@ -1032,30 +1060,6 @@ void StartDefaultTask(void *argument)
 						forward(1, 30);
 					}
 				}
-			}
-			else if(movement == 'M')
-			{
-				forward(1, memorizedDist+20);
-			}
-
-			else if(movement == 'P' || movement == 'O')
-			{
-				memorizedDist = ultrasonicDistance;
-				sprintf(OLED_row3, "mem %d", (int)memorizedDist);
-				if(memorizedDist <60){ //tilt
-					if(movement == 'P'){
-						//title left
-						tilted = 2;
-						turnRight(0,20);
-					}else if(movement == 'O'){
-						//tilt right
-						tilted = 1;
-						turnLeft(0,20);
-					}
-				}
-//				else{ //move forward until 60
-//					forward(1, memorizedDist - 60);
-//				}
 			}
 
 			else if(movement == 'A'){ //FALSE000

@@ -159,7 +159,6 @@ void forward(int dir, double dist)
 //	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
 //	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
 	targetDistance = dist;
-	osDelay(1000);
 
 	if (dist != 0){
 		motorStart();
@@ -198,8 +197,6 @@ void forward(int dir, double dist)
 
 		osDelay(50);
 	}
-
-
 	osDelay(50);
 }
 
@@ -213,7 +210,7 @@ void turnLeft(int dir, double angle) //radius = 24.5
 
 	htim1.Instance->CCR4 = 99;
 	setDirection(dir, 0);
-	osDelay(500);
+	osDelay(100);
 
 	isAngle = 1;
 
@@ -225,7 +222,7 @@ void turnLeft(int dir, double angle) //radius = 24.5
 	motorStart();
 
 	while(isMoving)
-		osDelay(100);
+		osDelay(50);
 
 	if (!dir)
 		totalAngle +=angle;
@@ -248,7 +245,7 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 
 	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);
-	osDelay(500);
+	osDelay(50);
 
 	isAngle = 1;
 
@@ -272,3 +269,35 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 	isAngle = 0;
 }
 
+extern double ultrasonicDistance;
+
+void sensorDistance(double targetDist){
+	int forwardDist = 0;
+	int uDist = 0;
+	for (;;)
+	{
+		//HCSR04_Read(); // Call Sensor
+		uDist = getUltrasonicDistance();
+		if (uDist <= 150 && uDist != -1) // Valid distance
+		{
+			if (uDist >= targetDist - 5 && uDist <= targetDist + 5)
+				break;
+			else if (uDist <= targetDist)
+			{
+				forwardDist = targetDist-uDist;
+				if(forwardDist >= 5)
+					forward(0, forwardDist);
+			}
+			else
+			{
+				forwardDist = uDist-targetDist;
+				if(forwardDist >= 5)
+					forward(1, forwardDist);
+			}
+		}
+		else
+		{
+			forward(1, 30);
+		}
+	}
+}

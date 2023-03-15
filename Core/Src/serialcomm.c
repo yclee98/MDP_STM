@@ -67,8 +67,39 @@ int dequeue(){
 
 	sprintf(OLED_row5, "deq %d %s", queueSize, actionBuffer[backCounter]);
 
+	if(strcmp(actionBuffer[backCounter], "START000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'Q';
+		return 1;
+	}
+	else if(strcmp(actionBuffer[backCounter], "P1L00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'W';
+		return 1;
+	}
+	else if(strcmp(actionBuffer[backCounter], "P1R00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'E';
+		return 1;
+	}
+
+	else if(strcmp(actionBuffer[backCounter], "P2L00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'R';
+		return 1;
+	}
+	else if(strcmp(actionBuffer[backCounter], "P2R00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'T';
+		return 1;
+	}
 	//check if end of action
-	if(strcmp(actionBuffer[backCounter], "END00000\0") ==0){
+	else if(strcmp(actionBuffer[backCounter], "END00000\0") ==0){
 		numOfEnd += 1;
 		waitingForCommand = 1;
 		queueSize--;
@@ -77,17 +108,17 @@ int dequeue(){
 		HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
 		return 0;
 	}
-//	else if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
-//		waitingForCommand = 1;
-//		queueSize--;
-//		backCounter++;
-//		return 0;
-//	}
-	else if(strcmp(actionBuffer[backCounter], "MOVEMEMO\0") ==0){
-		movement = 'M';
+	else if(strcmp(actionBuffer[backCounter], "FALSE0000\0") ==0){
+			queueSize--;
+			backCounter++;
+			movement = 'A';
+			return 1;
+		}
+	else if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
+		waitingForCommand = 1;
 		queueSize--;
 		backCounter++;
-		return 1;
+		return 0;
 	}
 
 	if(actionBuffer[backCounter][0] == 'F')
@@ -106,15 +137,6 @@ int dequeue(){
 		backCounter++;
 		return 1;
 	}
-	else if(actionBuffer[backCounter][0] == 'T'){ //TPR00000, TPL00000 to position the car for take pic
-			if(actionBuffer[backCounter][2] == 'R')
-				movement = 'P'; //it is at right side
-			else
-				movement = 'O'; //it is at left side
-			queueSize--;
-			backCounter++;
-			return 1;
-		}
 	else{
 		queueSize--;
 		backCounter++;

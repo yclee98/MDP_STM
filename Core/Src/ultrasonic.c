@@ -65,9 +65,13 @@ double getUltrasonicDistance(){
 
 	for(int i=0; i<tries; i++){
 		HCSR04_Read();
+		if (ultrasonicDistance == -1){
+			i -= 1;
+			continue;
+		}
 		newValue = ultrasonicDistance;
 
-		if(newValue >= oldValue+3 && newValue <= oldValue-3 && newValue != -1)
+		if(newValue >= oldValue-3 && newValue <= oldValue+3 && newValue != -1)
 			return newValue;
 		oldValue = newValue;
 	}
