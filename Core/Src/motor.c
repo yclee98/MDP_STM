@@ -150,9 +150,9 @@ void motorStop(){
 	osDelay(50);
 }
 
-int MINSPEED = 30;
-int AVGSPEED = 50;
-int MAXSPEED = 70;
+extern int MINSPEED;
+extern int AVGSPEED;
+extern int MAXSPEED;
 
 //1= forward, 0= reverse
 void forward(int dir, double dist)
@@ -173,7 +173,7 @@ void forward(int dir, double dist)
 	}
 	else if (dist <= 60)
 	{
-		STRAIGHT_MAX_SPEED = MAXSPEED;
+		STRAIGHT_MAX_SPEED = AVGSPEED;
 	}
 	else
 	{
@@ -265,7 +265,7 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 
 	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);
-	osDelay(50);
+	osDelay(100);
 
 	isAngle = 1;
 
@@ -277,7 +277,7 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 	motorStart();
 
 	while(isMoving)
-		osDelay(100);
+		osDelay(50);
 
 	if (dir)
 		totalAngle +=angle;
@@ -291,34 +291,43 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 
 extern double ultrasonicDistance;
 
-void sensorDistance(double targetDist){
-	int forwardDist = 0;
-	int uDist = 0;
+double sensorDistance(double targetDist){
+	double forwardDist = 0;
+	double uDist = 0;
 	int buffer = 2;
+	double distTravelled = 0;
 	for (;;)
 	{
 		//HCSR04_Read(); // Call Sensor
 		uDist = getUltrasonicDistance();
-		if (uDist <= 150 && uDist != -1) // Valid distance
+		if (uDist <= 200 && uDist != -1) // Valid distance
 		{
 			if (uDist >= targetDist - buffer && uDist <= targetDist + buffer)
 				break;
 			else if (uDist <= targetDist)
 			{
 				forwardDist = targetDist-uDist;
-				if(forwardDist >= buffer)
+				if(forwardDist >= buffer){
 					forward(0, forwardDist);
+					distTravelled-=forwardDist;
+				}
+
 			}
 			else
 			{
 				forwardDist = uDist-targetDist;
-				if(forwardDist >= buffer)
+				if(forwardDist >= buffer){
 					forward(1, forwardDist);
+					distTravelled+=forwardDist;
+				}
+
 			}
 		}
 		else
 		{
 			forward(1, 30);
+			distTravelled+=30;
 		}
 	}
+	return distTravelled+targetDist;
 }

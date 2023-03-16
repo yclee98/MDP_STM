@@ -92,6 +92,10 @@ double targetAngle = 0;
 double targetDistance = 0;
 volatile double ultrasonicDistance = 0;
 
+int MINSPEED = 30;
+int AVGSPEED = 50;
+int MAXSPEED = 60;
+
 encoder_instance encoderC, encoderD;
 pid_instance motorCpid, motorDpid;
 mov_aver_intance encoderCma, encoderDma;
@@ -133,15 +137,18 @@ void setConstant(){
 
 		ANGLE_STOP_OFFSET = 2;
 		STRAIGHT_MAX_SPEED = 70;
-		TURNING_MAX_SPEED = 70;
+		TURNING_MAX_SPEED = 50;
 		TURNING_SPEED_DIVISOR = 2;
+		MINSPEED = 30;
+		AVGSPEED = 50;
+		MAXSPEED = 70;
 	}else{
 		sprintf(OLED_row1, "outdoor");
 		KP_MOTOR = 70;
 		KI_MOTOR = 0.001;
 		KD_MOTOR = 2000;
 
-		KP_SERVO = 2;
+		KP_SERVO = 3;
 		KI_SERVO = 0.000001;//0.0001;
 		KD_SERVO = 0;
 
@@ -149,6 +156,9 @@ void setConstant(){
 		STRAIGHT_MAX_SPEED = 45;
 		TURNING_MAX_SPEED = 45;
 		TURNING_SPEED_DIVISOR = 2;
+		MINSPEED = 50;
+		AVGSPEED = 50;
+		MAXSPEED = 50;
 	}
 }
 
@@ -950,18 +960,18 @@ void StartDefaultTask(void *argument)
 	int numLeft = 0;
 	int numRight = 0;
 
-	int firstTurn = 0;
+	int firstTurn = 0; //0=left ,1=right
 
 	for (;;)
 	{
 		if (start == 1)
 		{
-//			indoor = 1 - indoor;
-//			setConstant();
-			sensorDistance(30);
-			path1Left();
-			osDelay(1000);
-			path2LeftLeft();
+			indoor = 1 - indoor;
+			setConstant();
+//			sensorDistance(30);
+//			path1Right();
+//			osDelay(1000);
+//			path2RightRight();
 			start=0;
 			continue;
 		}
@@ -970,37 +980,12 @@ void StartDefaultTask(void *argument)
 			if(!dequeue())//when return 0
 				continue;
 
-			if(movement == 'Q'){
-				sensorDistance(30);
-			}
-			else if(movement == 'W'){
-				firstTurn = 0;
-				path1Left();
-			}
-			else if(movement == 'E'){
-				firstTurn = 1;
-				path1Right();
-			}
-			else if(movement == 'R'){
-				if(firstTurn){
-					path2RightLeft();
-				}else{
-					path2LeftLeft();
-				}
-			}
-			else if(movement == 'T'){
-				if(firstTurn){
-					path2RightRight();
-				}else{
-					path2LeftRight();
-				}
-			}
 
-			//			if(tilted == 1){
-			//				turnLeft(1,20);
-			//			}else if(tilted == 2){
-			//				turnRight(1,20);
-			//			}
+			if(tilted == 1){
+				turnLeft(1,10);
+			}else if(tilted == 2){
+				turnRight(1,10);
+			}
 			//			else if(numOfEnd >= 6)
 			//			{
 			//				if(tilted == 4)
@@ -1014,6 +999,37 @@ void StartDefaultTask(void *argument)
 			//					forward(1, 10);
 			//				}
 			//			}
+
+			if(movement == 'Q'){
+				tilted = 0;
+				sensorDistance(30);
+			}
+			else if(movement == 'W'){
+				tilted = 0;
+				firstTurn = 0;
+				path1Left();
+			}
+			else if(movement == 'E'){
+				tilted = 0;
+				firstTurn = 1;
+				path1Right();
+			}
+			else if(movement == 'R'){
+				tilted = 0;
+				if(firstTurn){
+					path2RightLeft();
+				}else{
+					path2LeftLeft();
+				}
+			}
+			else if(movement == 'T'){
+				tilted = 0;
+				if(firstTurn){
+					path2RightRight();
+				}else{
+					path2LeftRight();
+				}
+			}
 
 			else if(movement == 'S'){
 				tilted = 0;
@@ -1037,7 +1053,15 @@ void StartDefaultTask(void *argument)
 			}
 
 			else if(movement == 'A'){ //FALSE000
-				forward(0, 10);
+				if(firstTurn){ //right side
+					tilted=2;
+					turnRight(0,10);
+				}
+				else{
+					tilted = 1;
+					turnLeft(0,10);
+				}
+//				forward(0, 10);
 //				if(numOfEnd >= 6)
 //				{
 //					if (tilted == 3 || (numLeft > numRight && tilted != 4))

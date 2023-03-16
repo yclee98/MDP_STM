@@ -4,28 +4,17 @@ extern uint8_t OLED_row3[20];
 
 extern double memorizedDist;
 
+//left right issue
+//right turn need more straight
+
 void path1Right(){
 	turnRight(1,31.397);
 	forward(1,33.948);
 	turnLeft(1,31.397+25);
 	turnRight(1,25);
-	while (1)
-	{
-		double tempMemorizedDist = getUltrasonicDistance();
-		if (tempMemorizedDist == -1)
-		{
-			forward(1, 30);
-			memorizedDist += 30;
-		}
-		else
-		{
-			memorizedDist += tempMemorizedDist;
-			break;
-		}
-	}
 	memorizedDist += 20 + 25;
+	memorizedDist+= sensorDistance(50);
 	sprintf(OLED_row3, "mem %d", (int)memorizedDist);
-	sensorDistance(50);
 //	if (memorizedDist < 60)
 //	turnLeft(1, 20);
 }
@@ -35,28 +24,14 @@ void path1Left(){
 	forward(1,33.948);
 	turnRight(1,31.397+25);
 	turnLeft(1,25);
-	while (1)
-	{
-		double tempMemorizedDist = getUltrasonicDistance();
-		if (tempMemorizedDist == -1)
-		{
-			forward(1, 30);
-			memorizedDist += 30;
-		}
-		else
-		{
-			memorizedDist += tempMemorizedDist;
-			break;
-		}
-	}
 	memorizedDist += 20 + 25;
+	memorizedDist += sensorDistance(50);
 	sprintf(OLED_row3, "mem %d", (int)memorizedDist);
-	sensorDistance(50);
 //	if (memorizedDist < 60)
 //	turnRight(1, 20);
 }
 
-void path2LeftRight(){
+void path2LeftRight(){ // Good
 //	if (memorizedDist < 60)
 //		turnLeft(1, 20);
 
@@ -64,16 +39,17 @@ void path2LeftRight(){
 	turnRight(1,57.645);
 	forward(1,61.298-5);
 	turnLeft(1,148.715);
-	forward(1,47.242);
+	// forward(1,47.242+7); Indoor
+	forward(1,47.242+7);
 	turnLeft(1,91.07);
 	forward(1, memorizedDist);
 	turnLeft(1,65.307);
-	forward(1,23.022);
+	forward(1,23.022+5);
 	turnRight(1,65.307);
 	sensorDistance(10);
 }
 
-void path2LeftLeft(){
+void path2LeftLeft(){ // Good
 //	if (memorizedDist < 60)
 //		turnLeft(1, 20);
 
@@ -98,16 +74,18 @@ void path2RightRight(){
 	turnRight(1,20.794);
 	forward(1,71.258);
 	turnLeft(1,111.864);
-	forward(1,47.24);
+	//forward(1,47.24+4);
+	forward(1,47.24+7);
 	turnLeft(1,91.07);
 	forward(1, memorizedDist+10);
 	turnLeft(1,65.307);
-	forward(1,23.022);
+	//forward(1,23.022);
+	forward(1,23.022+5);
 	turnRight(1,65.307);
 	sensorDistance(10);
 }
 
-void path2RightLeft(){
+void path2RightLeft(){ // Good
 //	if (memorizedDist < 60)
 //		turnRight(1, 20);
 

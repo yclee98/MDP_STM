@@ -59,7 +59,7 @@ void HCSR04_Read()
 }
 
 double getUltrasonicDistance(){
-	int tries = 10;
+	int tries = 5;
 	int oldValue = 0, newValue = 0, thirdValue = 0;
 
 	for(int i=0; i<tries; i++){
@@ -70,13 +70,13 @@ double getUltrasonicDistance(){
 		}
 		newValue = ultrasonicDistance;
 
-		if(newValue >= oldValue-3 && newValue <= oldValue+3)
+		if(newValue >= oldValue-3 && newValue <= oldValue+3 && newValue >= thirdValue-3 && newValue <= thirdValue+3)
 			break;
-		if(newValue >= thirdValue-3 && newValue <= thirdValue+3)
-			break;
+
 		thirdValue = oldValue;
 		oldValue = newValue;
 		newValue = -1;
+		osDelay(200);
 	}
 	sprintf(OLED_row4, "Ultra %d",newValue);
 	return newValue;
