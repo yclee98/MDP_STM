@@ -133,7 +133,7 @@ void setConstant(){
 
 		ANGLE_STOP_OFFSET = 2;
 		STRAIGHT_MAX_SPEED = 70;
-		TURNING_MAX_SPEED = 50;
+		TURNING_MAX_SPEED = 70;
 		TURNING_SPEED_DIVISOR = 2;
 	}else{
 		sprintf(OLED_row1, "outdoor");
@@ -146,8 +146,8 @@ void setConstant(){
 		KD_SERVO = 0;
 
 		ANGLE_STOP_OFFSET = 2;
-		STRAIGHT_MAX_SPEED = 70;
-		TURNING_MAX_SPEED = 50;
+		STRAIGHT_MAX_SPEED = 45;
+		TURNING_MAX_SPEED = 45;
 		TURNING_SPEED_DIVISOR = 2;
 	}
 }
@@ -935,7 +935,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
 	setConstant();
 	HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
-	HCSR04_Read();
+	getUltrasonicDistance();
 
 	sprintf(OLED_row0, "start");
 	resetCar();
@@ -1033,60 +1033,35 @@ void StartDefaultTask(void *argument)
 			{
 				tilted = 0;
 				double targetDist = magnitude;
-				int forwardDist = 0;
-				for (;;)
-				{
-					HCSR04_Read(); // Call Sensor
-
-					if (ultrasonicDistance <= 150 && ultrasonicDistance != -1) // Valid distance
-					{
-						if (ultrasonicDistance > targetDist - 3 && ultrasonicDistance < targetDist + 3)
-							break;
-						else if (ultrasonicDistance <= targetDist)
-						{
-							forwardDist = targetDist-ultrasonicDistance;
-							if(forwardDist >3)
-								forward(0, forwardDist);
-						}
-						else
-						{
-							forwardDist = ultrasonicDistance-targetDist;
-							if(forwardDist >3)
-								forward(1, forwardDist);
-						}
-					}
-					else
-					{
-						forward(1, 30);
-					}
-				}
+				sensorDistance(magnitude);
 			}
 
 			else if(movement == 'A'){ //FALSE000
-				if(numOfEnd >= 6)
-				{
-					if (tilted == 3 || (numLeft > numRight && tilted != 4))
-					{
-						tilted = 4;
-						forward(0, 10);
-						turnLeft(0, 10);
-					}
-					else
-					{
-						tilted = 3;
-						forward(0, 10);
-						turnRight(0, 10);
-					}
-				}
-				else if(tilted == 2 || (numLeft > numRight && tilted != 1)){
-					//tilt right
-					tilted = 1;
-					turnLeft(0,20);
-				}else {
-					//title left
-					tilted = 2;
-					turnRight(0,20);
-				}
+				forward(0, 10);
+//				if(numOfEnd >= 6)
+//				{
+//					if (tilted == 3 || (numLeft > numRight && tilted != 4))
+//					{
+//						tilted = 4;
+//						forward(0, 10);
+//						turnLeft(0, 10);
+//					}
+//					else
+//					{
+//						tilted = 3;
+//						forward(0, 10);
+//						turnRight(0, 10);
+//					}
+//				}
+//				else if(tilted == 2 || (numLeft > numRight && tilted != 1)){
+//					//tilt right
+//					tilted = 1;
+//					turnLeft(0,20);
+//				}else {
+//					//title left
+//					tilted = 2;
+//					turnRight(0,20);
+//				}
 			}
 			//sprintf(OLED_row4, "L %d R %d", numLeft, numRight);
 
@@ -1224,8 +1199,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				motorStop();
 			}
 			if(avgDist >= targetDistance-10){
-				setTarget(&motorCpid, 20);
-				setTarget(&motorDpid, 20);
+				setTarget(&motorCpid, 15);
+				setTarget(&motorDpid, 15);
 			}
 //			else if(avgDist >= targetDistance-10){
 //				setTarget(&motorCpid,targetDistance-avgDist);
@@ -1236,8 +1211,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //				setTarget(&motorDpid, 3);
 //			}
 			else if(avgDist <= 10){
-				setTarget(&motorCpid, 20);
-				setTarget(&motorDpid, 20);
+				setTarget(&motorCpid, 15);
+				setTarget(&motorDpid, 15);
 			}
 			else {
 				setTarget(&motorCpid, STRAIGHT_MAX_SPEED);
