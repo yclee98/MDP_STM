@@ -9,7 +9,21 @@ void path1Right(){
 	forward(1,33.948);
 	turnLeft(1,31.397+25);
 	turnRight(1,25);
-	memorizedDist = getUltrasonicDistance()+20+25;
+	while (1)
+	{
+		double tempMemorizedDist = getUltrasonicDistance();
+		if (tempMemorizedDist == -1)
+		{
+			forward(1, 30);
+			memorizedDist += 30;
+		}
+		else
+		{
+			memorizedDist += tempMemorizedDist;
+			break;
+		}
+	}
+	memorizedDist += 20 + 25;
 	sprintf(OLED_row3, "mem %d", (int)memorizedDist);
 	sensorDistance(50);
 //	if (memorizedDist < 60)
@@ -21,7 +35,21 @@ void path1Left(){
 	forward(1,33.948);
 	turnRight(1,31.397+25);
 	turnLeft(1,25);
-	memorizedDist = getUltrasonicDistance()+20+25;
+	while (1)
+	{
+		double tempMemorizedDist = getUltrasonicDistance();
+		if (tempMemorizedDist == -1)
+		{
+			forward(1, 30);
+			memorizedDist += 30;
+		}
+		else
+		{
+			memorizedDist += tempMemorizedDist;
+			break;
+		}
+	}
+	memorizedDist += 20 + 25;
 	sprintf(OLED_row3, "mem %d", (int)memorizedDist);
 	sensorDistance(50);
 //	if (memorizedDist < 60)
