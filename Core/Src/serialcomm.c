@@ -108,7 +108,7 @@ int dequeue(){
 		HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
 		return 0;
 	}
-	else if(strcmp(actionBuffer[backCounter], "FALSE0000\0") ==0){
+	else if(strcmp(actionBuffer[backCounter], "FALSE000\0") ==0){
 			queueSize--;
 			backCounter++;
 			movement = 'A';
