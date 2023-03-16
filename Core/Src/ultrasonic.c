@@ -37,7 +37,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 			ultrasonicDistance = Difference * .034/2;
 			Is_First_Captured = 0;
 
-			sprintf(OLED_row4, "Ultra %d",(int)ultrasonicDistance);
+//			sprintf(OLED_row4, "Ultra %d",(int)ultrasonicDistance);
 
 			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_2, TIM_INPUTCHANNELPOLARITY_RISING);
 			__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_CC2);
@@ -56,12 +56,11 @@ void HCSR04_Read()
 	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
 
 	__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_CC2);
-	osDelay(200);
 }
 
 double getUltrasonicDistance(){
-	int tries = 3;
-	int oldValue = 0, newValue = 0;
+	int tries = 10;
+	int oldValue = 0, newValue = 0, thirdValue = 0;
 
 	for(int i=0; i<tries; i++){
 		HCSR04_Read();
@@ -71,10 +70,15 @@ double getUltrasonicDistance(){
 		}
 		newValue = ultrasonicDistance;
 
-		if(newValue >= oldValue-3 && newValue <= oldValue+3 && newValue != -1)
-			return newValue;
+		if(newValue >= oldValue-3 && newValue <= oldValue+3)
+			break;
+		if(newValue >= thirdValue-3 && newValue <= thirdValue+3)
+			break;
+		thirdValue = oldValue;
 		oldValue = newValue;
+		newValue = -1;
 	}
-	return -1;
+	sprintf(OLED_row4, "Ultra %d",newValue);
+	return newValue;
 }
 
