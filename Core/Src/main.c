@@ -155,7 +155,7 @@ void setConstant(){
 		ANGLE_STOP_OFFSET = 2;
 		STRAIGHT_MAX_SPEED = 45;
 		TURNING_MAX_SPEED = 45;
-		TURNING_SPEED_DIVISOR = 2;
+		TURNING_SPEED_DIVISOR = 3;
 		MINSPEED = 50;
 		AVGSPEED = 50;
 		MAXSPEED = 50;
@@ -1189,7 +1189,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if (isAngle)
 		{
 			if(abs(targetAngle) - abs(totalAngle) <= 25){
-				if (tilted == 0 && (motorCpid.target == TURNING_MAX_SPEED || motorDpid.target == TURNING_MAX_SPEED))
+				if (motorCpid.target == TURNING_MAX_SPEED || motorDpid.target == TURNING_MAX_SPEED)
 				{
 					motorCpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
 					motorDpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
