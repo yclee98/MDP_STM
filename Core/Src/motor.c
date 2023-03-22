@@ -296,6 +296,7 @@ double sensorDistance(double targetDist){
 	double uDist = 0;
 	int buffer = 2;
 	double distTravelled = 0;
+	int checks = 2;
 	for (;;)
 	{
 		//HCSR04_Read(); // Call Sensor
@@ -303,9 +304,14 @@ double sensorDistance(double targetDist){
 		if (uDist <= 200 && uDist != -1) // Valid distance
 		{
 			if (uDist >= targetDist - buffer && uDist <= targetDist + buffer)
-				break;
+			{
+				checks -= 1;
+				if (checks <= 0)
+					break;
+			}
 			else if (uDist <= targetDist)
 			{
+				checks = 2;
 				forwardDist = targetDist-uDist;
 				if(forwardDist >= buffer){
 					forward(0, forwardDist);
@@ -315,6 +321,7 @@ double sensorDistance(double targetDist){
 			}
 			else
 			{
+				checks = 2;
 				forwardDist = uDist-targetDist;
 				if(forwardDist >= buffer){
 					forward(1, forwardDist);
@@ -325,6 +332,7 @@ double sensorDistance(double targetDist){
 		}
 		else
 		{
+			checks = 2;
 			forward(1, 30);
 			distTravelled+=30;
 		}
