@@ -1,6 +1,6 @@
 #include "pid.h"
 
-#define PID_MAX 6000
+#define PID_MAX 7000
 
 extern uint8_t OLED_row5[20];
 

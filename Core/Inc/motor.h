@@ -12,6 +12,7 @@ void motorStop();
 void forward(int dir, double dist);
 void turnLeft(int dir,double angle);
 void turnRight(int dir,double angle);
+double sensorDistance(double targetDist);
 
 
 #endif /* INC_MOTOR_H_ */

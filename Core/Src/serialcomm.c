@@ -26,7 +26,7 @@ int queueSize = 0;
 
 void startQueue(){
 	char * actionsList[] ={
-		"BS025000", "FR079667", "FS014000", "FL169667","END00000"
+			"TPR00000","END00000"
 	};
 
 	for(int i=0; i<sizeof(actionsList)/sizeof(char*); i++){
@@ -67,8 +67,39 @@ int dequeue(){
 
 	sprintf(OLED_row5, "deq %d %s", queueSize, actionBuffer[backCounter]);
 
+	if(strcmp(actionBuffer[backCounter], "START000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'Q';
+		return 1;
+	}
+	else if(strcmp(actionBuffer[backCounter], "P1L00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'W';
+		return 1;
+	}
+	else if(strcmp(actionBuffer[backCounter], "P1R00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'E';
+		return 1;
+	}
+
+	else if(strcmp(actionBuffer[backCounter], "P2L00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'R';
+		return 1;
+	}
+	else if(strcmp(actionBuffer[backCounter], "P2R00000\0") ==0){
+		queueSize--;
+		backCounter++;
+		movement = 'T';
+		return 1;
+	}
 	//check if end of action
-	if(strcmp(actionBuffer[backCounter], "END00000\0") ==0){
+	else if(strcmp(actionBuffer[backCounter], "END00000\0") ==0){
 		numOfEnd += 1;
 		waitingForCommand = 1;
 		queueSize--;
@@ -77,6 +108,12 @@ int dequeue(){
 		HAL_UART_Transmit(&huart3,aTxBuffer,8,0xFFFF);
 		return 0;
 	}
+	else if(strcmp(actionBuffer[backCounter], "FALSE000\0") ==0){
+			queueSize--;
+			backCounter++;
+			movement = 'A';
+			return 1;
+		}
 	else if(strcmp(actionBuffer[backCounter], "END00001\0") ==0){
 		waitingForCommand = 1;
 		queueSize--;
@@ -88,6 +125,18 @@ int dequeue(){
 		direction = 1;
 	else if(actionBuffer[backCounter][0] == 'B')
 		direction = 0;
+	else if(actionBuffer[backCounter][0] == 'S') //SENSORXX
+	{
+		direction = 1;
+		magnitude = 0;
+		movement = 'D';
+		for(int i=6; i<RxBUFFSIZE; i++){
+			magnitude = (actionBuffer[backCounter][i] - 48) + magnitude *10;
+		}
+		queueSize--;
+		backCounter++;
+		return 1;
+	}
 	else{
 		queueSize--;
 		backCounter++;

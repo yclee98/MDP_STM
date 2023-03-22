@@ -44,6 +44,7 @@ extern "C" {
 #include "pid.h"
 #include "moving_avg.h"
 #include "ultrasonic.h"
+#include "path.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

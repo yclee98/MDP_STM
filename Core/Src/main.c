@@ -90,7 +90,11 @@ double circumferenceWheel = 21.3;
 volatile double totalAngle =0;
 double targetAngle = 0;
 double targetDistance = 0;
-double ultrasonicDistance = 0;
+volatile double ultrasonicDistance = 0;
+
+int MINSPEED = 30;
+int AVGSPEED = 50;
+int MAXSPEED = 60;
 
 encoder_instance encoderC, encoderD;
 pid_instance motorCpid, motorDpid;
@@ -122,7 +126,7 @@ float TURNING_SPEED_DIVISOR;
 
 void setConstant(){
 	if(indoor){
-		sprintf(OLED_row2, "indoor");
+		sprintf(OLED_row1, "indoor");
 		KP_MOTOR = 70;
 		KI_MOTOR = 0.001;
 		KD_MOTOR = 2000;
@@ -132,11 +136,14 @@ void setConstant(){
 		KD_SERVO = 0;
 
 		ANGLE_STOP_OFFSET = 2;
-		STRAIGHT_MAX_SPEED = 45;
-		TURNING_MAX_SPEED = 35;
-		TURNING_SPEED_DIVISOR = 4;
+		STRAIGHT_MAX_SPEED = 70;
+		TURNING_MAX_SPEED = 50;
+		TURNING_SPEED_DIVISOR = 2;
+		MINSPEED = 30;
+		AVGSPEED = 50;
+		MAXSPEED = 70;
 	}else{
-		sprintf(OLED_row2, "outdoor");
+		sprintf(OLED_row1, "outdoor");
 		KP_MOTOR = 70;
 		KI_MOTOR = 0.001;
 		KD_MOTOR = 2000;
@@ -146,9 +153,12 @@ void setConstant(){
 		KD_SERVO = 0;
 
 		ANGLE_STOP_OFFSET = 2;
-		STRAIGHT_MAX_SPEED = 20;
-		TURNING_MAX_SPEED = 35;
-		TURNING_SPEED_DIVISOR = 3.39;
+		STRAIGHT_MAX_SPEED = 45;
+		TURNING_MAX_SPEED = 45;
+		TURNING_SPEED_DIVISOR = 3;
+		MINSPEED = 50;
+		AVGSPEED = 50;
+		MAXSPEED = 50;
 	}
 }
 
@@ -898,7 +908,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin ) {
 		if(start == 0){
 			start = 1;
 		}
-		//totalAngle = 0;
+		totalAngle = 0;
 	}
 }
 
@@ -919,6 +929,7 @@ void resetCar(){
 
 int tilted = 0;
 int numOfEnd;
+double memorizedDist = 0;
 
 /* USER CODE END 4 */
 
@@ -928,11 +939,13 @@ int numOfEnd;
  * @param  argument: Not used
  * @retval None
  */
-/* USER CODE END Header_Star	tDefaultTask */
+/* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	setConstant();
+	HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
+	getUltrasonicDistance();
 
 	sprintf(OLED_row0, "start");
 	resetCar();
@@ -944,26 +957,21 @@ void StartDefaultTask(void *argument)
 	pidEnable = 1;
 	htim1.Instance->CCR4 = SERVO_CENTER;
 
-	HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_2);
 	int numLeft = 0;
 	int numRight = 0;
 
-
+	int firstTurn = 0; //0=left ,1=right
 
 	for (;;)
 	{
 		if (start == 1)
 		{
-//			turnRight(1,180);
-//			forward(1,200);
-//			forward(0,100);
-//			osDelay(4000);
-//			turnLeft(1,360);
-//			forward(0,200);
 			indoor = 1 - indoor;
-//			indoor = 1;
 			setConstant();
-//			turnLeft(1,180);
+//			sensorDistance(30);
+//			path1Right();
+//			osDelay(1000);
+//			path2RightRight();
 			start=0;
 			continue;
 		}
@@ -972,26 +980,64 @@ void StartDefaultTask(void *argument)
 			if(!dequeue())//when return 0
 				continue;
 
-			if(tilted == 1){
-				turnLeft(1,20);
+
+			if(tilted == 1){ //week 9
+				turnLeft(1,10);
 			}else if(tilted == 2){
-				turnRight(1,20);
+				turnRight(1,10);
 			}
-			else if(numOfEnd >= 6)
-			{
-				if(tilted == 4)
-				{
-					turnLeft(1, 10);
-					forward(1, 10);
+
+//			if(tilted == 1){ //week 8
+//				turnLeft(1,20);
+//			}else if(tilted == 2){
+//				turnRight(1,20);
+//			}
+//			else if(numOfEnd >= 6)
+//			{
+//				if(tilted == 4)
+//				{
+//					turnLeft(1, 10);
+//					forward(1, 10);
+//				}
+//				else if(tilted == 3)
+//				{
+//					turnRight(1, 10);
+//					forward(1, 10);
+//				}
+//			}
+
+			if(movement == 'Q'){
+				tilted = 0;
+				sensorDistance(30);
+			}
+			else if(movement == 'W'){
+				tilted = 0;
+				firstTurn = 0;
+				path1Left();
+			}
+			else if(movement == 'E'){
+				tilted = 0;
+				firstTurn = 1;
+				path1Right();
+			}
+			else if(movement == 'R'){
+				tilted = 0;
+				if(firstTurn){
+					path2RightLeft();
+				}else{
+					path2LeftLeft();
 				}
-				else if(tilted == 3)
-				{
-					turnRight(1, 10);
-					forward(1, 10);
+			}
+			else if(movement == 'T'){
+				tilted = 0;
+				if(firstTurn){
+					path2RightRight();
+				}else{
+					path2LeftRight();
 				}
 			}
 
-			if(movement == 'S'){
+			else if(movement == 'S'){
 				tilted = 0;
 				forward(direction, magnitude/1000.0);
 			}
@@ -1005,32 +1051,49 @@ void StartDefaultTask(void *argument)
 				numRight++;
 				turnRight(direction, magnitude/1000.0);
 			}
-			else if(movement == 'A'){
-				if(numOfEnd >= 6)
-				{
-					if (tilted == 3 || (numLeft > numRight && tilted != 4))
-					{
-						tilted = 4;
-						forward(0, 10);
-						turnLeft(0, 10);
-					}
-					else
-					{
-						tilted = 3;
-						forward(0, 10);
-						turnRight(0, 10);
-					}
+			else if(movement == 'D') //sensor movement
+			{
+				tilted = 0;
+				double targetDist = magnitude;
+				sensorDistance(magnitude);
+			}
+
+			else if(movement == 'A'){ //FALSE000 week 9
+				if(firstTurn){ //right side
+					tilted=2;
+					turnRight(0,10);
 				}
-				else if(tilted == 2 || (numLeft > numRight && tilted != 1)){
-					//tilt right
+				else{
 					tilted = 1;
-					turnLeft(0,20);
-				}else {
-					//title left
-					tilted = 2;
-					turnRight(0,20);
+					turnLeft(0,10);
 				}
 			}
+//			else if(movement == 'A'){ //FALSE000 week 8
+//				if(numOfEnd >= 6)
+//				{
+//					if (tilted == 3 || (numLeft > numRight && tilted != 4))
+//					{
+//						tilted = 4;
+//						forward(0, 10);
+//						turnLeft(0, 10);
+//					}
+//					else
+//					{
+//						tilted = 3;
+//						forward(0, 10);
+//						turnRight(0, 10);
+//					}
+//				}
+//				else if(tilted == 2 || (numLeft > numRight && tilted != 1)){
+//					//tilt right
+//					tilted = 1;
+//					turnLeft(0,20);
+//				}else {
+//					//title left
+//					tilted = 2;
+//					turnRight(0,20);
+//				}
+//			}
 			//sprintf(OLED_row4, "L %d R %d", numLeft, numRight);
 
 		}
@@ -1133,7 +1196,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if (isAngle)
 		{
 			if(abs(targetAngle) - abs(totalAngle) <= 25){
-				if (tilted == 0 && (motorCpid.target == TURNING_MAX_SPEED || motorDpid.target == TURNING_MAX_SPEED))
+				if (motorCpid.target == TURNING_MAX_SPEED || motorDpid.target == TURNING_MAX_SPEED)
 				{
 					motorCpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
 					motorDpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
@@ -1167,8 +1230,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				motorStop();
 			}
 			if(avgDist >= targetDistance-10){
-				setTarget(&motorCpid, 20);
-				setTarget(&motorDpid, 20);
+				setTarget(&motorCpid, 15);
+				setTarget(&motorDpid, 15);
 			}
 //			else if(avgDist >= targetDistance-10){
 //				setTarget(&motorCpid,targetDistance-avgDist);
@@ -1179,8 +1242,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //				setTarget(&motorDpid, 3);
 //			}
 			else if(avgDist <= 10){
-				setTarget(&motorCpid, 20);
-				setTarget(&motorDpid, 20);
+				setTarget(&motorCpid, 15);
+				setTarget(&motorDpid, 15);
 			}
 			else {
 				setTarget(&motorCpid, STRAIGHT_MAX_SPEED);
@@ -1193,7 +1256,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if(htim==&htim7 && isMoving){
 		update_encoder(&encoderC, &htim4);
-		sprintf(OLED_row2, "velC %d", encoderC.velocity);
+//		sprintf(OLED_row2, "velC %d", encoderC.velocity);
 
 		if(!pidEnable) //dont do pid if not enable
 			return;
@@ -1221,7 +1284,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //		setMotorDPWM();
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
 
-		sprintf(OLED_row3, "pwmD %d", motorDpid.output);
+//		sprintf(OLED_row3, "pwmD %d", motorDpid.output);
 		//printVelocity(encoderC.velocity,encoderD.velocity);
 		return;
 	}

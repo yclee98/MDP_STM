@@ -21,6 +21,7 @@ extern uint8_t isAngle;
 extern double totalAngle;
 extern double targetAngle;
 extern double targetDistance;
+extern int STRAIGHT_MAX_SPEED;
 
 extern uint8_t OLED_row1[20], OLED_row4[20];
 
@@ -149,17 +150,35 @@ void motorStop(){
 	osDelay(50);
 }
 
+extern int MINSPEED;
+extern int AVGSPEED;
+extern int MAXSPEED;
+
 //1= forward, 0= reverse
 void forward(int dir, double dist)
 {
 	if(dist <=0 && dist > 300)
 		return;
+
+
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
 //	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
 //	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
 	targetDistance = dist;
-	osDelay(1000);
+
+	if (dist <= 30)
+	{
+		STRAIGHT_MAX_SPEED = MINSPEED;
+	}
+	else if (dist <= 60)
+	{
+		STRAIGHT_MAX_SPEED = AVGSPEED;
+	}
+	else
+	{
+		STRAIGHT_MAX_SPEED = AVGSPEED;
+	}
 
 	if (dist != 0){
 		motorStart();
@@ -198,8 +217,6 @@ void forward(int dir, double dist)
 
 		osDelay(50);
 	}
-
-
 	osDelay(50);
 }
 
@@ -213,7 +230,7 @@ void turnLeft(int dir, double angle) //radius = 24.5
 
 	htim1.Instance->CCR4 = 99;
 	setDirection(dir, 0);
-	osDelay(500);
+	osDelay(100);
 
 	isAngle = 1;
 
@@ -225,7 +242,7 @@ void turnLeft(int dir, double angle) //radius = 24.5
 	motorStart();
 
 	while(isMoving)
-		osDelay(100);
+		osDelay(50);
 
 	if (!dir)
 		totalAngle +=angle;
@@ -248,7 +265,7 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 
 	htim1.Instance->CCR4 = 249;
 	setDirection(dir, 0);
-	osDelay(500);
+	osDelay(100);
 
 	isAngle = 1;
 
@@ -260,7 +277,7 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 	motorStart();
 
 	while(isMoving)
-		osDelay(100);
+		osDelay(50);
 
 	if (dir)
 		totalAngle +=angle;
@@ -272,3 +289,53 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 	isAngle = 0;
 }
 
+extern double ultrasonicDistance;
+
+double sensorDistance(double targetDist){
+	double forwardDist = 0;
+	double uDist = 0;
+	int buffer = 2;
+	double distTravelled = 0;
+	int checks = 2;
+	for (;;)
+	{
+		//HCSR04_Read(); // Call Sensor
+		uDist = getUltrasonicDistance();
+		if (uDist <= 200 && uDist != -1) // Valid distance
+		{
+			if (uDist >= targetDist - buffer && uDist <= targetDist + buffer)
+			{
+				checks -= 1;
+				if (checks <= 0)
+					break;
+			}
+			else if (uDist <= targetDist)
+			{
+				checks = 2;
+				forwardDist = targetDist-uDist;
+				if(forwardDist >= buffer){
+					forward(0, forwardDist);
+					distTravelled-=forwardDist;
+				}
+
+			}
+			else
+			{
+				checks = 2;
+				forwardDist = uDist-targetDist;
+				if(forwardDist >= buffer){
+					forward(1, forwardDist);
+					distTravelled+=forwardDist;
+				}
+
+			}
+		}
+		else
+		{
+			checks = 2;
+			forward(1, 30);
+			distTravelled+=30;
+		}
+	}
+	return distTravelled+targetDist;
+}
