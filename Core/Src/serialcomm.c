@@ -36,7 +36,7 @@ void startQueue(){
 		enqueue();
 	}
 }
-//BS020000FL090000FS008000FR180000BS030000END00000
+
 int enqueue(){
 	frontCounter = frontCounter %  QUEUESIZE;
 	if(queueSize >= QUEUESIZE)

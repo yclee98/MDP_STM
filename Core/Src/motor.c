@@ -23,6 +23,8 @@ extern double targetAngle;
 extern double targetDistance;
 extern int STRAIGHT_MAX_SPEED;
 
+extern double ultrasonicDistance;
+
 extern uint8_t OLED_row1[20], OLED_row4[20];
 
 //forward = 1, reverse = 0
@@ -114,7 +116,6 @@ void setMotorDPWM(){
 void motorStart(){
 	__disable_irq();
 	isMoving = 1;
-//	totalAngle = 0.0;
 
 	if(pidEnable == 0){
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, 5000);
@@ -163,8 +164,6 @@ void forward(int dir, double dist)
 
 	htim1.Instance->CCR4 = SERVO_CENTER;
 	setDirection(dir, 0);
-//	setTarget(&motorCpid, 25); // MAX 25 for Accuracy
-//	setTarget(&motorDpid, 25); // MAX 40 for speed but horrible accuracy
 	targetDistance = dist;
 
 	if (dist <= 30)
@@ -190,13 +189,6 @@ void forward(int dir, double dist)
 
 	//servo control
 	while(isMoving){
-//		if(dir == 1) //forward
-//			calPWM = (int)(SERVO_CENTER + totalAngle*servoMultiplier);
-//		else if(encoderC.direction == 0)//reverse
-//			calPWM = (int)(SERVO_CENTER - totalAngle*servoMultiplier);
-//		else
-//			calPWM = SERVO_CENTER;
-
 		apply_pid_servo(&gyroPID, totalAngle);
 
 		if(dir == 1){
@@ -226,7 +218,7 @@ void turnLeft(int dir, double angle) //radius = 24.5
 		return;
 
 	setTarget(&motorCpid, TURNING_MAX_SPEED);
-	setTarget(&motorDpid, TURNING_MAX_SPEED*0.509257627); //4846855213416525
+	setTarget(&motorDpid, TURNING_MAX_SPEED*0.509257627);
 
 	htim1.Instance->CCR4 = 99;
 	setDirection(dir, 0);
@@ -249,8 +241,6 @@ void turnLeft(int dir, double angle) //radius = 24.5
 	else
 		totalAngle -= angle;
 
-//	totalAngle = 0.0;
-
 	isAngle = 0;
 }
 
@@ -259,7 +249,7 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 	if(angle > 360 || angle < 0)
 			return;
 
-	setTarget(&motorCpid, TURNING_MAX_SPEED*0.596); //0.505463828125
+	setTarget(&motorCpid, TURNING_MAX_SPEED*0.596);
 	setTarget(&motorDpid, TURNING_MAX_SPEED);
 
 
@@ -284,12 +274,8 @@ void turnRight(int dir, double angle) //radius = 24.3,25.45
 	else
 		totalAngle -= angle;
 
-//	totalAngle = 0.0;
-
 	isAngle = 0;
 }
-
-extern double ultrasonicDistance;
 
 double sensorDistance(double targetDist){
 	double forwardDist = 0;
@@ -299,7 +285,6 @@ double sensorDistance(double targetDist){
 	int checks = 2;
 	for (;;)
 	{
-		//HCSR04_Read(); // Call Sensor
 		uDist = getUltrasonicDistance();
 		if (uDist <= 200 && uDist != -1) // Valid distance
 		{

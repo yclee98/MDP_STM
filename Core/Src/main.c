@@ -109,19 +109,22 @@ uint32_t magnitude = 0;
 
 int indoor = 0;
 
-//indoor setting
 float KP_MOTOR;
 double KI_MOTOR;
 float KD_MOTOR;
 
 float KP_SERVO;
-double KI_SERVO;//0.0001;
+double KI_SERVO;
 float KD_SERVO;
 
 int ANGLE_STOP_OFFSET;
 int STRAIGHT_MAX_SPEED;
 int TURNING_MAX_SPEED;
 float TURNING_SPEED_DIVISOR;
+
+int tilted = 0;
+int numOfEnd;
+double memorizedDist = 0;
 
 
 void setConstant(){
@@ -918,7 +921,6 @@ void resetCar(){
 
 	pid_reset(&motorCpid);
 	pid_reset(&motorDpid);
-//	pid_reset(&gyroPID);
 
 	reset_average_filter(&encoderCma);
 	reset_average_filter(&encoderDma);
@@ -926,10 +928,6 @@ void resetCar(){
 	targetAngle = 0;
 	targetDistance = 0;
 }
-
-int tilted = 0;
-int numOfEnd;
-double memorizedDist = 0;
 
 /* USER CODE END 4 */
 
@@ -968,10 +966,6 @@ void StartDefaultTask(void *argument)
 		{
 			indoor = 1 - indoor;
 			setConstant();
-//			sensorDistance(30);
-//			path1Right();
-//			osDelay(1000);
-//			path2RightRight();
 			start=0;
 			continue;
 		}
@@ -979,7 +973,6 @@ void StartDefaultTask(void *argument)
 		if(!isEmpty()){
 			if(!dequeue())//when return 0
 				continue;
-
 
 			if(tilted == 1){ //week 9
 				turnLeft(1,10);
@@ -1198,8 +1191,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			if(abs(targetAngle) - abs(totalAngle) <= 25){
 				if (motorCpid.target == TURNING_MAX_SPEED || motorDpid.target == TURNING_MAX_SPEED)
 				{
-					motorCpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
-					motorDpid.target /= TURNING_SPEED_DIVISOR;//5.94;//2.54;
+					motorCpid.target /= TURNING_SPEED_DIVISOR;
+					motorDpid.target /= TURNING_SPEED_DIVISOR;
 				}
 			}
 			if (htim1.Instance->CCR4 <= SERVO_CENTER){ // Turning Left
@@ -1258,13 +1251,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		update_encoder(&encoderC, &htim4);
 //		sprintf(OLED_row2, "velC %d", encoderC.velocity);
 
-		if(!pidEnable) //dont do pid if not enable
+		if(!pidEnable)
 			return;
 
 		apply_average_filter(&encoderCma, encoderC.velocity);
 		apply_pid(&motorCpid, encoderCma.out);
 
-//		setMotorCPWM();
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_3, motorCpid.output);
 
 		//sprintf(OLED_row4, "pwmC %d", motorCpid.output);
@@ -1275,13 +1267,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		update_encoder(&encoderD, &htim2);
 		//sprintf(OLED_row3, "velD %d", encoderD.velocity);
 
-		if(!pidEnable) //dont do pid if not enable
+		if(!pidEnable)
 			return;
 
 		apply_average_filter(&encoderDma, encoderD.velocity);
 		apply_pid(&motorDpid, encoderDma.out);
 
-//		setMotorDPWM();
 		__HAL_TIM_SetCompare(&htim8, TIM_CHANNEL_4, motorDpid.output);
 
 //		sprintf(OLED_row3, "pwmD %d", motorDpid.output);

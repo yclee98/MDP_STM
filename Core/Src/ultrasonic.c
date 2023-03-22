@@ -49,7 +49,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 void HCSR04_Read()
 {
 	ultrasonicDistance = -1;
-	//int c = 10;
 
 	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
 	osDelay(10);
