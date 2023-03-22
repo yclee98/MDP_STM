@@ -981,24 +981,30 @@ void StartDefaultTask(void *argument)
 				continue;
 
 
-			if(tilted == 1){
+			if(tilted == 1){ //week 9
 				turnLeft(1,10);
 			}else if(tilted == 2){
 				turnRight(1,10);
 			}
-			//			else if(numOfEnd >= 6)
-			//			{
-			//				if(tilted == 4)
-			//				{
-			//					turnLeft(1, 10);
-			//					forward(1, 10);
-			//				}
-			//				else if(tilted == 3)
-			//				{
-			//					turnRight(1, 10);
-			//					forward(1, 10);
-			//				}
-			//			}
+
+//			if(tilted == 1){ //week 8
+//				turnLeft(1,20);
+//			}else if(tilted == 2){
+//				turnRight(1,20);
+//			}
+//			else if(numOfEnd >= 6)
+//			{
+//				if(tilted == 4)
+//				{
+//					turnLeft(1, 10);
+//					forward(1, 10);
+//				}
+//				else if(tilted == 3)
+//				{
+//					turnRight(1, 10);
+//					forward(1, 10);
+//				}
+//			}
 
 			if(movement == 'Q'){
 				tilted = 0;
@@ -1052,7 +1058,7 @@ void StartDefaultTask(void *argument)
 				sensorDistance(magnitude);
 			}
 
-			else if(movement == 'A'){ //FALSE000
+			else if(movement == 'A'){ //FALSE000 week 9
 				if(firstTurn){ //right side
 					tilted=2;
 					turnRight(0,10);
@@ -1061,7 +1067,8 @@ void StartDefaultTask(void *argument)
 					tilted = 1;
 					turnLeft(0,10);
 				}
-//				forward(0, 10);
+			}
+//			else if(movement == 'A'){ //FALSE000 week 8
 //				if(numOfEnd >= 6)
 //				{
 //					if (tilted == 3 || (numLeft > numRight && tilted != 4))
@@ -1086,7 +1093,7 @@ void StartDefaultTask(void *argument)
 //					tilted = 2;
 //					turnRight(0,20);
 //				}
-			}
+//			}
 			//sprintf(OLED_row4, "L %d R %d", numLeft, numRight);
 
 		}
